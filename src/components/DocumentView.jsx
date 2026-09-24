@@ -81,7 +81,9 @@ const DocumentView = ({ board, updateDocument, onClose }) => {
               display: 'flex', 
               alignItems: 'center', 
               gap: '0.5rem',
-              color: 'var(--text-muted)'
+              color: 'var(--text-muted)',
+              marginBottom: 0,
+              padding: '0.4rem 0.8rem'
             }}
           >
             <FiX /> Close
