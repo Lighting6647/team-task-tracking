@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FiGrid, FiFolder, FiSearch, FiMoreHorizontal, FiPlus, FiLayout, FiChevronDown, FiChevronRight, FiFileText, FiEdit2, FiTrash2 } from 'react-icons/fi';
 
-const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoard, onRenameBoard }) => {
+const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoard, onRenameBoard, onMoveBoard }) => {
   const [hoveredId, setHoveredId] = useState(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [addMenuParentId, setAddMenuParentId] = useState(null);
@@ -11,6 +11,8 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedFolders, setExpandedFolders] = useState({});
+  const [draggedBoardId, setDraggedBoardId] = useState(null);
+  const [dragOverId, setDragOverId] = useState(null);
   const menuRef = useRef(null);
   const actionMenuRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -67,6 +69,82 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
     setShowAddMenu(true);
   };
 
+  const handleDragStart = (e, board) => {
+    e.stopPropagation();
+    setDraggedBoardId(board.id);
+    e.dataTransfer.setData('text/plain', board.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e, board) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedBoardId === board.id) return;
+    
+    // Only folders can be drop targets for moving inside
+    if (board.type === 'folder' && dragOverId !== board.id) {
+      setDragOverId(board.id);
+    }
+  };
+
+  const handleDragLeave = (e, board) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dragOverId === board.id) {
+      setDragOverId(null);
+    }
+  };
+
+  const handleDrop = (e, targetBoard) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverId(null);
+    
+    if (!draggedBoardId || draggedBoardId === targetBoard.id) return;
+
+    if (targetBoard.type === 'folder') {
+      // Prevent cyclic parent assignment
+      let current = targetBoard;
+      let isCyclic = false;
+      while (current) {
+        if (current.id === draggedBoardId) {
+          isCyclic = true;
+          break;
+        }
+        current = boards.find(b => b.id === current.parentId);
+      }
+
+      if (!isCyclic) {
+        onMoveBoard(draggedBoardId, targetBoard.id);
+        setExpandedFolders(prev => ({ ...prev, [targetBoard.id]: true }));
+      }
+    }
+    setDraggedBoardId(null);
+  };
+
+  const handleRootDragOver = (e) => {
+    e.preventDefault();
+    if (draggedBoardId && dragOverId !== 'root') {
+      setDragOverId('root');
+    }
+  };
+
+  const handleRootDragLeave = (e) => {
+    e.preventDefault();
+    if (dragOverId === 'root') {
+      setDragOverId(null);
+    }
+  };
+
+  const handleRootDrop = (e) => {
+    e.preventDefault();
+    setDragOverId(null);
+    if (draggedBoardId) {
+      onMoveBoard(draggedBoardId, null);
+    }
+    setDraggedBoardId(null);
+  };
+
   const renderIcon = (type, color) => {
     if (type === 'folder') return <FiFolder color={color} />;
     if (type === 'dashboard') return <FiLayout color={color} />;
@@ -90,11 +168,24 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
     return (
       <React.Fragment key={board.id}>
         <div 
-          className={`sidebar-menu-item ${board.id === activeBoardId ? 'active' : ''}`}
+          draggable
+          onDragStart={(e) => handleDragStart(e, board)}
+          onDragOver={(e) => handleDragOver(e, board)}
+          onDragLeave={(e) => handleDragLeave(e, board)}
+          onDrop={(e) => handleDrop(e, board)}
+          className={`sidebar-menu-item ${board.id === activeBoardId ? 'active' : ''} ${dragOverId === board.id ? 'drag-over' : ''}`}
           onClick={() => isFolder ? toggleFolder({stopPropagation: () => {}}, board.id) : onSelectBoard(board.id)}
           onMouseEnter={() => setHoveredId(board.id)}
           onMouseLeave={() => setHoveredId(null)}
-          style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: `${1 + depth * 1.5}rem`, position: 'relative' }}
+          style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            paddingLeft: `${1 + depth * 1.5}rem`, 
+            position: 'relative',
+            opacity: draggedBoardId === board.id ? 0.5 : 1,
+            backgroundColor: dragOverId === board.id ? 'rgba(0, 133, 255, 0.2)' : undefined,
+            border: dragOverId === board.id ? '1px dashed var(--accent-blue)' : undefined
+          }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
             {isFolder && (
@@ -217,7 +308,16 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
         )}
       </div>
 
-      <div className="sidebar-content">
+      <div 
+        className="sidebar-content"
+        onDragOver={handleRootDragOver}
+        onDragLeave={handleRootDragLeave}
+        onDrop={handleRootDrop}
+        style={{ 
+          backgroundColor: dragOverId === 'root' ? 'rgba(0, 133, 255, 0.05)' : undefined,
+          minHeight: '100px'
+        }}
+      >
         {isSearchActive ? (
           filteredBoards.map(board => (
             <div 

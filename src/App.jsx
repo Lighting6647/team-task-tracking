@@ -388,6 +388,10 @@ const App = () => {
     setBoards(boards.map(b => b.id === boardId ? { ...b, title: newTitle } : b));
   };
 
+  const handleMoveBoard = (boardId, targetParentId) => {
+    setBoards(boards.map(b => b.id === boardId ? { ...b, parentId: targetParentId } : b));
+  };
+
   // Group Actions (scoped to active board)
   const handleReorderItem = (sourceGroupId, sourceItemId, targetGroupId, targetItemId) => {
     if (!activeBoard) return;
@@ -546,6 +550,7 @@ const App = () => {
         onAddBoard={handleAddBoard}
         onDeleteBoard={handleDeleteBoard}
         onRenameBoard={handleRenameBoard}
+        onMoveBoard={handleMoveBoard}
       />
       <div className="main-content">
         <div className="top-bar">
