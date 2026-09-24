@@ -3,6 +3,11 @@ import { v4 as uuidv4 } from 'uuid';
 import Sidebar from './components/Sidebar';
 import TableView from './components/TableView';
 import DashboardView from './components/DashboardView';
+import KanbanView from './components/KanbanView';
+import DocumentView from './components/DocumentView';
+import GanttView from './components/GanttView';
+import FormView from './components/FormView';
+import TaskDrawer from './components/TaskDrawer';
 import TopActions from './components/TopActions';
 import './index.css';
 
@@ -84,6 +89,10 @@ const App = () => {
     }
   }, [boards, activeBoardId]);
 
+  useEffect(() => {
+    setActiveItemContext(null);
+  }, [activeBoardId]);
+
   // Automations
   useEffect(() => {
     let hasChanges = false;
@@ -145,6 +154,8 @@ const App = () => {
 
 
   // View States for Top Actions
+  const [viewType, setViewType] = useState('table'); // 'table' or 'kanban'
+  const [activeItemContext, setActiveItemContext] = useState(null); // { groupId, itemId }
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sortConfig, setSortConfig] = useState(null);
@@ -251,14 +262,16 @@ const App = () => {
   const processedGroups = getProcessedGroups();
 
   // Board Actions
-  const handleAddBoard = (type = 'grid') => {
+  const handleAddBoard = (type = 'grid', parentId = null) => {
     const newBoard = {
       id: uuidv4(),
-      title: type === 'grid' ? 'New Board' : type === 'dashboard' ? 'New Dashboard' : 'New Folder',
+      title: type === 'grid' ? 'New Board' : type === 'dashboard' ? 'New Dashboard' : type === 'doc' ? 'New Document' : 'New Folder',
       type: type,
-      color: type === 'grid' ? 'var(--accent-blue)' : 'var(--text-muted)',
+      parentId: parentId,
+      color: type === 'grid' ? 'var(--accent-blue)' : type === 'doc' ? 'var(--accent-purple)' : 'var(--text-muted)',
       columns: type === 'grid' ? DEFAULT_COLUMNS : undefined,
       widgets: type === 'dashboard' ? [] : undefined,
+      content: type === 'doc' ? '' : undefined,
       groups: type === 'grid' ? [
         {
           id: uuidv4(),
@@ -274,6 +287,10 @@ const App = () => {
 
   const handleUpdateDashboard = (boardId, widgets) => {
     setBoards(boards.map(b => b.id === boardId ? { ...b, widgets } : b));
+  };
+
+  const handleUpdateDocument = (boardId, content) => {
+    setBoards(boards.map(b => b.id === boardId ? { ...b, content } : b));
   };
 
   const handleAddColumn = (boardId, columnType, columnTitle) => {
@@ -367,20 +384,69 @@ const App = () => {
     setBoards(boards.map(b => b.id === activeBoardId ? { ...b, title } : b));
   };
 
+  const handleRenameBoard = (boardId, newTitle) => {
+    setBoards(boards.map(b => b.id === boardId ? { ...b, title: newTitle } : b));
+  };
+
   // Group Actions (scoped to active board)
+  const handleReorderItem = (sourceGroupId, sourceItemId, targetGroupId, targetItemId) => {
+    if (!activeBoard) return;
+    if (sourceGroupId === targetGroupId && sourceItemId === targetItemId) return;
+
+    const newGroups = JSON.parse(JSON.stringify(activeBoard.groups));
+    const sourceGroup = newGroups.find(g => g.id === sourceGroupId);
+    const targetGroup = newGroups.find(g => g.id === targetGroupId);
+    if (!sourceGroup || !targetGroup) return;
+    const sourceItemIndex = sourceGroup.items.findIndex(i => i.id === sourceItemId);
+    if (sourceItemIndex === -1) return;
+    const [movedItem] = sourceGroup.items.splice(sourceItemIndex, 1);
+    if (targetItemId) {
+      const targetItemIndex = targetGroup.items.findIndex(i => i.id === targetItemId);
+      targetGroup.items.splice(targetItemIndex, 0, movedItem);
+    } else {
+      targetGroup.items.push(movedItem);
+    }
+    updateActiveBoardGroups(newGroups);
+  };
+
   const updateActiveBoardGroups = (newGroups) => {
     setBoards(boards.map(b => b.id === activeBoardId ? { ...b, groups: newGroups } : b));
   };
 
-  const handleUpdateItem = (groupId, itemId, field, value) => {
+  const getActiveTask = () => {
+    if (!activeItemContext || !activeBoard || activeBoard.type !== 'grid') return null;
+    const group = activeBoard.groups.find(g => g.id === activeItemContext.groupId);
+    if (!group) return null;
+    return group.items.find(i => i.id === activeItemContext.itemId);
+  };
+
+  const handleUpdateActiveTaskContext = (field, value) => {
+    if (activeItemContext) {
+      handleUpdateItem(activeItemContext.groupId, activeItemContext.itemId, field, value);
+    }
+  };
+
+  const handleUpdateItem = (groupId, itemId, field, value, parentId = null) => {
     if (!activeBoard) return;
     const newGroups = activeBoard.groups.map(g => {
       if (g.id === groupId) {
         return {
           ...g,
-          items: g.items.map(item => 
-            item.id === itemId ? { ...item, [field]: value } : item
-          )
+          items: g.items.map(item => {
+            if (parentId) {
+              if (item.id === parentId) {
+                return {
+                  ...item,
+                  subitems: (item.subitems || []).map(sub => 
+                    sub.id === itemId ? { ...sub, [field]: value } : sub
+                  )
+                };
+              }
+              return item;
+            } else {
+              return item.id === itemId ? { ...item, [field]: value } : item;
+            }
+          })
         };
       }
       return g;
@@ -389,19 +455,36 @@ const App = () => {
   };
 
   const handleAddItem = (groupId, title) => {
+    if (!activeBoard) return null;
+    const newItemId = uuidv4();
+    const newGroups = activeBoard.groups.map(g => {
+      if (g.id === groupId) {
+        return {
+          ...g,
+          items: [...g.items, { id: newItemId, title }]
+        };
+      }
+      return g;
+    });
+    updateActiveBoardGroups(newGroups);
+    return newItemId;
+  };
+
+  const handleAddSubitem = (groupId, parentId, title) => {
     if (!activeBoard) return;
     const newGroups = activeBoard.groups.map(g => {
       if (g.id === groupId) {
         return {
           ...g,
-          items: [...g.items, {
-            id: uuidv4(),
-            title,
-            person: '',
-            date: '',
-            status: 'empty',
-            link: ''
-          }]
+          items: g.items.map(item => {
+            if (item.id === parentId) {
+              return {
+                ...item,
+                subitems: [...(item.subitems || []), { id: uuidv4(), title }]
+              };
+            }
+            return item;
+          })
         };
       }
       return g;
@@ -409,13 +492,17 @@ const App = () => {
     updateActiveBoardGroups(newGroups);
   };
 
-  const handleDeleteItem = (groupId, itemId) => {
+  const handleDeleteItem = (groupId, itemId, parentId = null) => {
     if (!activeBoard) return;
     const newGroups = activeBoard.groups.map(g => {
       if (g.id === groupId) {
         return {
           ...g,
-          items: g.items.filter(item => item.id !== itemId)
+          items: parentId 
+            ? g.items.map(item => item.id === parentId 
+                ? { ...item, subitems: (item.subitems || []).filter(sub => sub.id !== itemId) } 
+                : item)
+            : g.items.filter(item => item.id !== itemId)
         };
       }
       return g;
@@ -458,18 +545,68 @@ const App = () => {
         onSelectBoard={setActiveBoardId}
         onAddBoard={handleAddBoard}
         onDeleteBoard={handleDeleteBoard}
+        onRenameBoard={handleRenameBoard}
       />
       <div className="main-content">
         <div className="top-bar">
-          <div className="board-title">
+          <div className="board-title" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             {activeBoard ? (
               <input 
                 type="text" 
                 value={activeBoard.title}
                 onChange={(e) => handleUpdateBoardTitle(e.target.value)}
-                style={{ fontSize: '1.25rem', fontWeight: 600, width: '300px' }}
+                style={{ fontSize: '1.25rem', fontWeight: 600, width: '250px' }}
               />
             ) : 'No Board Selected'}
+            
+            {activeBoard?.type === 'grid' && (
+              <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: '1rem' }}>
+                <button 
+                  className={`btn-outline ${viewType === 'table' ? 'active' : ''}`} 
+                  onClick={() => setViewType('table')}
+                  style={{ 
+                    background: viewType === 'table' ? 'rgba(0,133,255,0.2)' : 'transparent', 
+                    border: viewType === 'table' ? '1px solid rgba(0,133,255,0.5)' : '1px solid transparent',
+                    color: viewType === 'table' ? '#fff' : 'var(--text-muted)'
+                  }}
+                >
+                  Table
+                </button>
+                <button 
+                  className={`btn-outline ${viewType === 'kanban' ? 'active' : ''}`} 
+                  onClick={() => setViewType('kanban')}
+                  style={{ 
+                    background: viewType === 'kanban' ? 'rgba(0,133,255,0.2)' : 'transparent', 
+                    border: viewType === 'kanban' ? '1px solid rgba(0,133,255,0.5)' : '1px solid transparent',
+                    color: viewType === 'kanban' ? '#fff' : 'var(--text-muted)'
+                  }}
+                >
+                  Kanban
+                </button>
+                <button 
+                  className={`btn-outline ${viewType === 'gantt' ? 'active' : ''}`} 
+                  onClick={() => setViewType('gantt')}
+                  style={{ 
+                    background: viewType === 'gantt' ? 'rgba(0,133,255,0.2)' : 'transparent', 
+                    border: viewType === 'gantt' ? '1px solid rgba(0,133,255,0.5)' : '1px solid transparent',
+                    color: viewType === 'gantt' ? '#fff' : 'var(--text-muted)'
+                  }}
+                >
+                  Gantt
+                </button>
+                <button 
+                  className={`btn-outline ${viewType === 'form' ? 'active' : ''}`} 
+                  onClick={() => setViewType('form')}
+                  style={{ 
+                    background: viewType === 'form' ? 'rgba(0,133,255,0.2)' : 'transparent', 
+                    border: viewType === 'form' ? '1px solid rgba(0,133,255,0.5)' : '1px solid transparent',
+                    color: viewType === 'form' ? '#fff' : 'var(--text-muted)'
+                  }}
+                >
+                  Form
+                </button>
+              </div>
+            )}
           </div>
           <div className="top-actions" style={{ overflow: 'visible' }}>
               <TopActions 
@@ -485,30 +622,63 @@ const App = () => {
         
         {activeBoard ? (
           activeBoard.type === 'grid' ? (
-            <TableView 
-              boardId={activeBoard.id}
-              columns={activeBoard.columns || DEFAULT_COLUMNS}
-              groups={processedGroups} 
-              updateItem={handleUpdateItem} 
-              addItem={handleAddItem}
-              deleteItem={handleDeleteItem}
-              addGroup={handleAddGroup}
-              deleteGroup={handleDeleteGroup}
-              renameGroup={handleRenameGroup}
-              addColumn={handleAddColumn}
-              renameColumn={handleRenameColumn}
-              deleteColumn={handleDeleteColumn}
-              updateColumnOptions={handleUpdateColumnOptions}
-              updateColumnWidth={handleUpdateColumnWidth}
-              reorderColumns={handleReorderColumns}
-              hiddenColumns={hiddenColumns}
-              isGroupedByStatus={groupBy === 'status'}
-            />
+            viewType === 'table' ? (
+              <TableView 
+                onOpenItem={(groupId, itemId) => setActiveItemContext({ groupId, itemId })} 
+                reorderItem={handleReorderItem}
+                boardId={activeBoard.id}
+                columns={activeBoard.columns || DEFAULT_COLUMNS}
+                groups={processedGroups} 
+                updateItem={handleUpdateItem} 
+                addItem={handleAddItem}
+                addSubitem={handleAddSubitem}
+                deleteItem={handleDeleteItem}
+                addGroup={handleAddGroup}
+                deleteGroup={handleDeleteGroup}
+                renameGroup={handleRenameGroup}
+                addColumn={handleAddColumn}
+                renameColumn={handleRenameColumn}
+                deleteColumn={handleDeleteColumn}
+                updateColumnOptions={handleUpdateColumnOptions}
+                updateColumnWidth={handleUpdateColumnWidth}
+                reorderColumns={handleReorderColumns}
+                hiddenColumns={hiddenColumns}
+                isGroupedByStatus={groupBy === 'status'}
+              />
+            ) : viewType === 'kanban' ? (
+              <KanbanView 
+                board={activeBoard}
+                updateItem={handleUpdateItem}
+                onOpenItem={(groupId, itemId) => setActiveItemContext({ groupId, itemId })}
+              />
+            ) : viewType === 'form' ? (
+              <FormView 
+                board={activeBoard}
+                addItem={handleAddItem}
+                updateItem={handleUpdateItem}
+              />
+            ) : (
+              <GanttView 
+                groups={processedGroups}
+                columns={activeBoard.columns || DEFAULT_COLUMNS}
+                onOpenItem={(groupId, itemId) => setActiveItemContext({ groupId, itemId })}
+              />
+            )
           ) : activeBoard?.type === 'dashboard' ? (
             <DashboardView 
               board={activeBoard} 
               allBoards={boards} 
               updateDashboard={handleUpdateDashboard} 
+            />
+          ) : activeBoard?.type === 'doc' ? (
+            <DocumentView 
+              board={activeBoard} 
+              updateDocument={handleUpdateDocument} 
+              onClose={() => {
+                const gridBoard = boards.find(b => b.type === 'grid');
+                if (gridBoard) setActiveBoardId(gridBoard.id);
+                else setActiveBoardId(null);
+              }}
             />
           ) : (
             <div style={{ padding: '3rem', color: 'var(--text-muted)', textAlign: 'center' }}>
@@ -525,6 +695,12 @@ const App = () => {
           </div>
         )}
       </div>
+      <TaskDrawer 
+        isOpen={!!activeItemContext}
+        onClose={() => setActiveItemContext(null)}
+        task={getActiveTask()}
+        onUpdate={handleUpdateActiveTaskContext}
+      />
     </div>
   );
 };
