@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiGrid, FiFolder, FiSearch, FiMoreHorizontal, FiPlus, FiLayout, FiChevronDown, FiChevronRight, FiFileText, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiGrid, FiFolder, FiSearch, FiMoreHorizontal, FiPlus, FiLayout, FiChevronDown, FiChevronRight, FiFileText, FiEdit2, FiTrash2 , FiHome, FiCheckSquare, FiVideo, FiStar} from 'react-icons/fi';
 
 const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoard, onRenameBoard, onMoveBoard }) => {
   const [hoveredId, setHoveredId] = useState(null);
@@ -258,9 +258,38 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
 
   return (
     <div className="sidebar">
-      <div className="sidebar-header" style={{ position: 'relative' }}>
+      {/* Top Static Items */}
+      <div style={{ padding: '1rem 0' }}>
+        <div className="sidebar-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><FiHome size={18} /> Home</div>
+        <div className="sidebar-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><FiCheckSquare size={18} /> My work</div>
+        <div className="sidebar-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><FiVideo size={18} /> AI Notetaker</div>
+        <div className="sidebar-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><FiMoreHorizontal size={18} /> More</div>
+      </div>
+      
+      <div style={{ padding: '0 1rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        Favorites <FiChevronRight size={12} />
+      </div>
+
+      <div style={{ padding: '0 1rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span>Workspaces</span>
+        <FiMoreHorizontal size={14} style={{ cursor: 'pointer' }} />
+      </div>
+      
+      <div style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ width: '24px', height: '24px', backgroundColor: '#e2445c', color: 'white', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>M</div>
+        <span style={{ flex: 1, fontSize: '0.95rem', fontWeight: 500, color: 'var(--text-main)' }}>Main workspace</span>
+        <button 
+          className="btn-primary" 
+          style={{ padding: '2px 6px', borderRadius: '4px' }}
+          onClick={(e) => openAddMenu(e, null)}
+        >
+          <FiPlus />
+        </button>
+      </div>
+
+      <div style={{ padding: '0.5rem 1rem', position: 'relative' }} ref={menuRef}>
         {isSearching ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%' }} ref={searchInputRef}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%', background: 'rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px' }} ref={searchInputRef}>
             <FiSearch size={14} color="var(--text-muted)" />
             <input 
               type="text" 
@@ -272,26 +301,14 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
             />
           </div>
         ) : (
-          <>
-            Workspace
-            <button onClick={() => setIsSearching(true)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-              <FiSearch size={14}/>
-            </button>
-          </>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            <FiSearch size={14} onClick={() => setIsSearching(true)} style={{ cursor: 'pointer' }} />
+            <span style={{ flex: 1 }} onClick={() => setIsSearching(true)}>Search</span>
+          </div>
         )}
-      </div>
-      
-      <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', position: 'relative' }} ref={menuRef}>
-        <button 
-          className="btn-outline" 
-          style={{ width: '100%', marginBottom: 0, justifyContent: 'center' }}
-          onClick={(e) => openAddMenu(e, null)}
-        >
-          <FiPlus /> Add
-        </button>
         
         {showAddMenu && (
-          <div className="add-menu-dropdown" style={{ zIndex: 1000 }}>
+          <div className="add-menu-dropdown" style={{ zIndex: 1000, top: '40px' }}>
             <div className="add-menu-item" onClick={() => handleAdd('grid')}>
               <FiGrid color="var(--accent-blue)" /> New Board
             </div>
@@ -315,7 +332,9 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
         onDrop={handleRootDrop}
         style={{ 
           backgroundColor: dragOverId === 'root' ? 'rgba(0, 133, 255, 0.05)' : undefined,
-          minHeight: '100px'
+          minHeight: '100px',
+          overflowY: 'auto',
+          flex: 1
         }}
       >
         {isSearchActive ? (
@@ -328,15 +347,14 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
             >
               {renderIcon(board.type, board.color || 'var(--accent-blue)')}
               {board.title}
-              {board.type === 'folder' && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>(Folder)</span>}
             </div>
           ))
         ) : (
-          rootItems.map(board => renderItem(board, 0))
+          rootItems.map(board => renderItem(board))
         )}
       </div>
     </div>
   );
-};
+}
 
 export default Sidebar;

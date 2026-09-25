@@ -468,9 +468,9 @@ const TableView = ({
                       style={{ cursor: !isGroupedByStatus ? 'grab' : 'default' }}
                     >
                       <td className="cell-checkbox">
-                        <div className="group-color-indicator" style={{ backgroundColor: group.color }}></div>
-                        <input type="checkbox" checked={selectedItems.some(s => s.itemId === item.id)} onChange={() => toggleSelection(group.id, item.id)} />
-                      </td>
+                    <div className="group-color-indicator" style={{ backgroundColor: group.color || 'var(--accent-blue)' }}></div>
+                    <div style={{ opacity: hoveredItemId === item.id ? 1 : 0, transition: 'opacity 0.2s', width: '14px', height: '14px', border: '1px solid var(--border-color)', borderRadius: '2px', margin: '0 auto', cursor: 'pointer' }}></div>
+                  </td>
                       <td>
                         <div className="cell-content" style={{ justifyContent: 'space-between', paddingRight: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', flex: 1, gap: '4px' }}>
@@ -533,9 +533,9 @@ const TableView = ({
                     {isExpanded && (item.subitems || []).map(subitem => (
                       <tr key={subitem.id} style={{ background: 'rgba(0,0,0,0.1)' }}>
                         <td className="cell-checkbox">
-                          <div className="group-color-indicator" style={{ backgroundColor: group.color, width: '4px', marginLeft: '4px' }}></div>
-                          <input type="checkbox" style={{ marginLeft: '12px' }} checked={selectedItems.some(s => s.itemId === subitem.id)} onChange={() => toggleSelection(group.id, subitem.id, item.id)} />
-                        </td>
+                    <div className="group-color-indicator" style={{ backgroundColor: group.color || 'var(--accent-blue)' }}></div>
+                    <div style={{ opacity: hoveredItemId === item.id ? 1 : 0, transition: 'opacity 0.2s', width: '14px', height: '14px', border: '1px solid var(--border-color)', borderRadius: '2px', margin: '0 auto', cursor: 'pointer' }}></div>
+                  </td>
                         <td>
                           <div className="cell-content" style={{ justifyContent: 'space-between', paddingRight: '8px', paddingLeft: '24px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
@@ -574,8 +574,9 @@ const TableView = ({
                     {isExpanded && !group.isVirtual && (
                       <tr className="add-item-row" style={{ background: 'rgba(0,0,0,0.05)' }}>
                         <td className="cell-checkbox">
-                           <div className="group-color-indicator" style={{ backgroundColor: group.color, width: '4px', marginLeft: '4px' }}></div>
-                        </td>
+                    <div className="group-color-indicator" style={{ backgroundColor: group.color || 'var(--accent-blue)' }}></div>
+                    <div style={{ opacity: hoveredItemId === item.id ? 1 : 0, transition: 'opacity 0.2s', width: '14px', height: '14px', border: '1px solid var(--border-color)', borderRadius: '2px', margin: '0 auto', cursor: 'pointer' }}></div>
+                  </td>
                         <td>
                           <div style={{ paddingLeft: '24px' }}>
                             <input 
