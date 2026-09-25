@@ -1,3 +1,4 @@
+import { FiBell, FiInbox, FiUserPlus, FiMoreHorizontal, FiSearch, FiFilter, FiArrowDown, FiEyeOff, FiUsers, FiGrid, FiHelpCircle, FiSettings, FiMenu } from 'react-icons/fi';
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Sidebar from './components/Sidebar';

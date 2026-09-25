@@ -18,7 +18,7 @@ const StatusDropdown = ({ statusId, statusOptions, setStatusOptions, onStatusCha
   }, []);
 
   // Find current status object or fallback to empty
-  const currentStatus = statusOptions.find(s => s.id === statusId) || statusOptions.find(s => s.id === 'empty') || statusOptions[0];
+  const currentStatus = statusOptions.find(s => s.id === statusId) || statusOptions.find(s => s.id === 'empty') || statusOptions[0] || { id: 'empty', label: '', color: '#c4c4c4' };
 
   const handleSelect = (id) => {
     onStatusChange(id);
