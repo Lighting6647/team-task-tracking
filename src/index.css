@@ -1,12 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 :root {
-  --bg-main: #1D1E27;
-  --bg-sidebar: #292A36;
-  --bg-panel: #292A36;
+  --bg-main: #181B34;
+  --bg-sidebar: #292F4C;
+  --bg-panel: #292F4C;
   --bg-hover: rgba(255, 255, 255, 0.05);
-  --bg-table-header: #1D1E27;
-  --bg-table-row: #1D1E27;
-  --bg-table-row-hover: #292A36;
+  --bg-table-header: #181B34;
+  --bg-table-row: #181B34;
+  --bg-table-row-hover: #292F4C;
   --border-color: #32333D;
   
   --text-main: #FFFFFF;
@@ -335,7 +335,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
 /* Monday.com Specific Layout */
 .top-navbar {
   height: 48px;
-  background-color: #292A36;
+  background-color: #1D1E27;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
