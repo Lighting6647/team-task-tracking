@@ -22,113 +22,119 @@ const INITIAL_STATUS_OPTIONS = [
 
 
 const TEAM_OPTIONS = [
-  { id: 'finance', label: 'Finance', color: '#579bfc' },
-  { id: 'sales', label: 'Sales', color: '#c455de' },
-  { id: 'partners', label: 'Partners', color: '#00c875' }
+  { id: 'dev', label: 'Development', color: '#579bfc' },
+  { id: 'design', label: 'Design', color: '#c455de' },
+  { id: 'marketing', label: 'Marketing', color: '#00c875' },
+  { id: 'finance', label: 'Finance', color: '#fdab3d' }
 ];
-const SITE_OPTIONS = [
-  { id: 'denver', label: 'Denver', color: '#579bfc' },
-  { id: 'florida', label: 'Florida', color: '#fdab3d' }
-];
-const COMPUTER_TYPE_OPTIONS = [
-  { id: 'pc', label: 'PC', color: '#c455de' },
-  { id: 'mac', label: 'Mac', color: '#00c875' }
-];
-const DONE_WORKING_OPTIONS = [
+
+const STATUS_OPTIONS = [
   { id: 'done', label: 'Done', color: '#00c875' },
   { id: 'working', label: 'Working on it', color: '#fdab3d' },
+  { id: 'stuck', label: 'Stuck', color: '#e2445c' },
   { id: 'empty', label: '', color: '#c4c4c4' }
 ];
 
 const DEFAULT_COLUMNS = [
-  { id: 'person1', title: 'IT owner', type: 'person', width: 100 },
-  { id: 'person2', title: 'Responsible...', type: 'person', width: 100 },
-  { id: 'date1', title: 'Start date', type: 'date', width: 120 },
-  { id: 'team', title: 'Team', type: 'status', width: 100, options: TEAM_OPTIONS },
-  { id: 'site', title: 'Site', type: 'status', width: 100, options: SITE_OPTIONS },
-  { id: 'comp_type', title: 'Computer t...', type: 'status', width: 120, options: COMPUTER_TYPE_OPTIONS },
-  { id: 'comp_setup', title: 'Computer se...', type: 'status', width: 120, options: DONE_WORKING_OPTIONS },
-  { id: 'google', title: 'Google acco...', type: 'status', width: 120, options: DONE_WORKING_OPTIONS },
-  { id: 'zoom', title: 'Zoom acco...', type: 'status', width: 120, options: DONE_WORKING_OPTIONS },
-  { id: 'o365', title: '365 account', type: 'status', width: 120, options: DONE_WORKING_OPTIONS },
-  { id: 'setup_desk', title: 'Setup desk mon...', type: 'status', width: 140, options: DONE_WORKING_OPTIONS },
-  { id: 'setup_ent', title: 'Setup entrance t...', type: 'status', width: 140, options: DONE_WORKING_OPTIONS },
-  { id: 'email', title: 'Email', type: 'text', width: 150 },
+  { id: 'owner', title: 'Owner', type: 'person', width: 120 },
+  { id: 'status', title: 'Status', type: 'status', width: 140, options: STATUS_OPTIONS },
+  { id: 'date', title: 'Due Date', type: 'date', width: 140 },
+  { id: 'department', title: 'Department', type: 'status', width: 140, options: TEAM_OPTIONS },
 ];
 
 const INITIAL_BOARDS = [
   {
-    id: 'folder-1',
-    title: 'IT management',
+    id: 'folder-dashboard',
+    title: 'แดชบอร์ด (Dashboard)',
     type: 'folder',
     parentId: null
   },
   {
-    id: 'board-1',
-    title: 'IT Onboarding',
+    id: 'board-dashboard-1',
+    title: 'ภาพรวมโปรเจกต์',
+    type: 'dashboard',
+    parentId: 'folder-dashboard',
+    widgets: []
+  },
+  {
+    id: 'folder-passapp',
+    title: 'Pass App',
+    type: 'folder',
+    parentId: null
+  },
+  {
+    id: 'board-passapp-1',
+    title: 'แผนการพัฒนา Pass App',
     type: 'grid',
-    color: 'var(--accent-blue)',
-    parentId: 'folder-1',
+    color: '#00c875',
+    parentId: 'folder-passapp',
     columns: DEFAULT_COLUMNS,
     groups: [
       {
-        id: 'group-1',
-        title: 'More information about this template:',
-        color: '#e2445c',
+        id: 'g1', title: 'Sprint 1: Core Features', color: '#579bfc',
         items: [
-          { id: 'i1', title: 'Hi there! 👋 Click here fo...', status: 'empty', person1: '', person2: '', date1: '', team: 'empty', site: 'empty', comp_type: 'empty', comp_setup: 'empty', google: 'empty', zoom: 'empty', o365: 'empty', setup_desk: 'empty', setup_ent: 'empty', email: '' }
+          { id: 'i1', title: 'ระบบ Login & Authentication', owner: 'Dev Team', status: 'done', date: '2026-10-01', department: 'dev' },
+          { id: 'i2', title: 'ออกแบบ UI/UX หน้า Home', owner: 'Design Team', status: 'done', date: '2026-10-05', department: 'design' }
         ]
       },
       {
-        id: 'group-2',
-        title: 'New Hires - June',
-        color: '#579bfc',
+        id: 'g2', title: 'Sprint 2: Payment Integration', color: '#fdab3d',
         items: [
-          { id: 'i2', title: 'Employee name 3', status: 'empty', person1: '', person2: '', date1: '2020-06-23', team: 'finance', site: 'denver', comp_type: 'pc', comp_setup: 'working', google: 'empty', zoom: 'empty', o365: 'empty', setup_desk: 'empty', setup_ent: 'empty', email: '' },
-          { id: 'i3', title: 'Employee name 5', status: 'empty', person1: '', person2: '', date1: '2020-06-19', team: 'sales', site: 'denver', comp_type: 'pc', comp_setup: 'done', google: 'done', zoom: 'working', o365: 'working', setup_desk: 'done', setup_ent: 'done', email: '' }
-        ]
-      },
-      {
-        id: 'group-3',
-        title: 'New Hires - May',
-        color: '#c455de',
-        items: [
-          { id: 'i4', title: 'Employee name 4', status: 'empty', person1: '', person2: '', date1: '2020-05-15', team: 'partners', site: 'florida', comp_type: 'mac', comp_setup: 'done', google: 'done', zoom: 'done', o365: 'done', setup_desk: 'done', setup_ent: 'done', email: 'mdislmann@me.c...' }
+          { id: 'i3', title: 'เชื่อมต่อ Payment Gateway', owner: 'Backend', status: 'working', date: '2026-10-15', department: 'dev' }
         ]
       }
     ]
   },
   {
-    id: 'board-2',
-    title: 'Inventory management',
-    type: 'grid',
-    parentId: 'folder-1',
-    columns: DEFAULT_COLUMNS,
-    groups: []
+    id: 'folder-ios',
+    title: 'IOS,Asset',
+    type: 'folder',
+    parentId: null
   },
   {
-    id: 'board-3',
-    title: 'Procurement process',
+    id: 'board-ios-1',
+    title: 'จัดการ Asset ของ iOS',
     type: 'grid',
-    parentId: 'folder-1',
+    color: '#c455de',
+    parentId: 'folder-ios',
     columns: DEFAULT_COLUMNS,
-    groups: []
+    groups: [
+      {
+        id: 'g3', title: 'App Icons & Splash Screens', color: '#c455de',
+        items: [
+          { id: 'i4', title: 'Export App Icons ทุกขนาด', owner: 'Design Team', status: 'done', date: '2026-09-30', department: 'design' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'folder-acc',
+    title: 'บัญชี (Accounting)',
+    type: 'folder',
+    parentId: null
+  },
+  {
+    id: 'board-acc-1',
+    title: 'ติดตามรายรับ-รายจ่าย',
+    type: 'grid',
+    color: '#e2445c',
+    parentId: 'folder-acc',
+    columns: DEFAULT_COLUMNS,
+    groups: [
+      {
+        id: 'g4', title: 'ค่าใช้จ่ายเดือนตุลาคม', color: '#e2445c',
+        items: [
+          { id: 'i5', title: 'ค่า Server AWS', owner: 'Finance', status: 'working', date: '2026-10-05', department: 'finance' },
+          { id: 'i6', title: 'เงินเดือนพนักงาน', owner: 'HR', status: 'empty', date: '2026-10-25', department: 'finance' }
+        ]
+      }
+    ]
   }
 ];
-
-const GROUP_COLORS = [
-  'var(--group-color-1)',
-  'var(--group-color-2)',
-  'var(--group-color-3)',
-  'var(--group-color-4)',
-  'var(--accent-blue)',
-  'var(--accent-purple)'
-];
-
-
+const GROUP_COLORS = ['var(--group-color-1)', 'var(--group-color-2)', 'var(--group-color-3)', 'var(--group-color-4)', 'var(--accent-blue)', 'var(--accent-purple)'];
 const App = () => {
   const [boards, setBoards] = useState(() => {
-    const saved = localStorage.getItem('monday_boards_v2');
+    const saved = localStorage.getItem('monday_boards_v3');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -153,10 +159,10 @@ const App = () => {
     return INITIAL_BOARDS;
   });
 
-  const [activeBoardId, setActiveBoardId] = useState('board-1');
+  const [activeBoardId, setActiveBoardId] = useState('board-passapp-1');
 
   useEffect(() => {
-    localStorage.setItem('monday_boards_v2', JSON.stringify(boards));
+    localStorage.setItem('monday_boards_v3', JSON.stringify(boards));
     if (boards.length > 0 && !boards.find(b => b.id === activeBoardId)) {
       setActiveBoardId(boards[0].id);
     }
