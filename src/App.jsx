@@ -153,7 +153,7 @@ const App = () => {
     return INITIAL_BOARDS;
   });
 
-  const [activeBoardId, setActiveBoardId] = useState(boards[0]?.id || null);
+  const [activeBoardId, setActiveBoardId] = useState('board-1');
 
   useEffect(() => {
     localStorage.setItem('monday_boards_v2', JSON.stringify(boards));
@@ -616,30 +616,7 @@ const App = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: 'var(--bg-main)' }}>
-      {/* Global Navbar */}
-      <div className="top-navbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div className="global-nav-icon"><FiMenu size={20} /></div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-            <div style={{ width: '24px', height: '24px', backgroundColor: 'var(--accent-blue)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ width: '12px', height: '12px', border: '2px solid white', borderRadius: '50%' }}></div>
-            </div>
-            <span style={{ fontWeight: 600, fontSize: '1rem' }}>monday work management</span>
-          </div>
-          <button className="btn-outline" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px', borderColor: 'rgba(255,255,255,0.2)' }}>See plans</button>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div className="global-nav-icon"><FiBell size={18} /></div>
-          <div className="global-nav-icon"><FiInbox size={18} /></div>
-          <div className="global-nav-icon"><FiUserPlus size={18} /></div>
-          <div className="global-nav-icon"><FiSearch size={18} /></div>
-          <div className="global-nav-icon"><FiHelpCircle size={18} /></div>
-          <div className="global-nav-icon"><FiGrid size={18} /></div>
-          <div className="avatar" style={{ width: '28px', height: '28px', marginLeft: '0.5rem', cursor: 'pointer' }}>A</div>
-        </div>
-      </div>
-
-      <div className="app-container" style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div className="app-container" style={{ flex: 1, display: 'flex', overflow: 'hidden', height: '100vh' }}>
         <Sidebar 
           boards={boards}
           activeBoardId={activeBoardId}
