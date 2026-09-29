@@ -154,7 +154,7 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
 
   const toggleFolder = (e, id) => {
     e.stopPropagation();
-    setExpandedFolders(prev => ({ ...prev, [id]: !prev[id] }));
+    setExpandedFolders(prev => ({ ...prev, [id]: prev[id] === false ? true : false }));
   };
 
   const isSearchActive = searchQuery.trim().length > 0;
@@ -163,7 +163,7 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
   const renderItem = (board, depth = 0) => {
     const isFolder = board.type === 'folder';
     const children = boards.filter(b => b.parentId === board.id);
-    const isExpanded = expandedFolders[board.id];
+    const isExpanded = expandedFolders[board.id] !== false;
 
     return (
       <React.Fragment key={board.id}>

@@ -134,7 +134,7 @@ const INITIAL_BOARDS = [
 const GROUP_COLORS = ['var(--group-color-1)', 'var(--group-color-2)', 'var(--group-color-3)', 'var(--group-color-4)', 'var(--accent-blue)', 'var(--accent-purple)'];
 const App = () => {
   const [boards, setBoards] = useState(() => {
-    const saved = localStorage.getItem('monday_boards_v3');
+    const saved = localStorage.getItem('monday_boards_v4');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -168,7 +168,7 @@ const App = () => {
   
 
   useEffect(() => {
-    localStorage.setItem('monday_boards_v3', JSON.stringify(boards));
+    localStorage.setItem('monday_boards_v4', JSON.stringify(boards));
     if (boards.length > 0 && !boards.find(b => b.id === activeBoardId)) {
       setActiveBoardId(boards[0].id);
     }
