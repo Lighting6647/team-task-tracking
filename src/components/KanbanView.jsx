@@ -15,8 +15,8 @@ const KanbanView = ({ board, updateItem, onOpenItem }) => {
   }
 
   const statusOptions = statusCol.options || [];
-  const allItems = board.groups.flatMap(g => 
-    g.items.map(item => ({ ...item, groupId: g.id, groupColor: g.color }))
+  const allItems = (board.groups || []).flatMap(g => 
+    (g.items || []).map(item => ({ ...item, groupId: g.id, groupColor: g.color }))
   );
 
   const handleDragStart = (e, item) => {

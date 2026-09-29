@@ -1,9 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { FiChevronRight, FiChevronDown, FiCalendar } from 'react-icons/fi';
 
-const GanttView = ({ groups, columns, onOpenItem }) => {
+const GanttView = ({ board, groups: propGroups, columns: propColumns, onOpenItem }) => {
   const [zoom, setZoom] = useState('weeks'); // 'days', 'weeks', 'months'
   const [expandedGroups, setExpandedGroups] = useState({});
+
+  const groups = propGroups || board?.groups || [];
+  const columns = propColumns || board?.columns || [];
 
   // Find timeline or date columns
   const dateColumns = columns.filter(c => c.type === 'timeline' || c.type === 'date');

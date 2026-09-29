@@ -3,16 +3,24 @@ import { FiChevronDown, FiPlus, FiTrash2, FiExternalLink, FiStar } from 'react-i
 import StatusDropdown from './StatusDropdown';
 
 const TableView = ({ 
-  boardId, columns = [], groups, updateItem, addItem, addSubitem, deleteItem, addGroup, deleteGroup, renameGroup, 
+  board,
+  boardId: propBoardId, 
+  columns: propColumns, 
+  groups: propGroups, 
+  updateItem, addItem, addSubitem, deleteItem, addGroup, deleteGroup, renameGroup, 
   addColumn, renameColumn, deleteColumn, updateColumnOptions, updateColumnWidth, reorderColumns,
   hiddenColumns = [], isGroupedByStatus = false, onOpenItem, reorderItem
 }) => {
+  const boardId = propBoardId || board?.id;
+  const columns = (propColumns && propColumns.length > 0) ? propColumns : (board?.columns || []);
+  const groups = propGroups || board?.groups || [];
   const [newItems, setNewItems] = useState({});
   const [newSubitems, setNewSubitems] = useState({});
   const [expandedItems, setExpandedItems] = useState({});
   const [selectedItems, setSelectedItems] = useState([]);
   const [openColumnMenuGroupId, setOpenColumnMenuGroupId] = useState(null);
   const [resizingCol, setResizingCol] = useState(null);
+  const [hoveredItemId, setHoveredItemId] = useState(null);
   const tableContainerRef = useRef(null);
 
   const toggleSelection = (groupId, itemId, parentId = null) => {
@@ -137,7 +145,7 @@ const TableView = ({
 
       return (
         <div style={{ display: 'flex', height: '8px', borderRadius: '4px', overflow: 'hidden', width: '100%' }}>
-          {col.options.map(opt => {
+          {(col.options || []).map(opt => {
             const count = counts[opt.id] || 0;
             if (count === 0) return null;
             const percentage = (count / total) * 100;
@@ -453,7 +461,7 @@ const TableView = ({
               </tr>
             </thead>
             <tbody>
-              {group.items.map(item => {
+              {(group.items || []).map(item => {
                 const isExpanded = expandedItems[item.id];
                 const hasSubitems = item.subitems && item.subitems.length > 0;
                 
