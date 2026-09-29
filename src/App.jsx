@@ -160,6 +160,12 @@ const App = () => {
   });
 
   const [activeBoardId, setActiveBoardId] = useState('board-passapp-1');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filters, setFilters] = useState({});
+  const [isGroupedByStatus, setIsGroupedByStatus] = useState(false);
+  
+  
+  
 
   useEffect(() => {
     localStorage.setItem('monday_boards_v3', JSON.stringify(boards));
@@ -235,7 +241,8 @@ const App = () => {
   // View States for Top Actions
   const [viewType, setViewType] = useState('table'); // 'table' or 'kanban'
   const [activeItemContext, setActiveItemContext] = useState(null); // { groupId, itemId }
-  const [searchQuery, setSearchQuery] = useState('');
+  const [taskDrawerOpen, setTaskDrawerOpen] = useState(false);
+  
   const [statusFilter, setStatusFilter] = useState('');
   const [sortConfig, setSortConfig] = useState(null);
   const [hiddenColumns, setHiddenColumns] = useState([]);
@@ -690,17 +697,23 @@ const App = () => {
                 {activeBoard.type === 'grid' && viewType === 'table' && (
                   <TableView 
                     board={activeBoard} 
-                    onUpdateBoard={handleUpdateBoardGroups}
-                    onUpdateColumns={handleUpdateColumns}
-                    onAddItem={handleAddItem}
-                    onReorderItem={handleReorderItem}
-                    onRenameGroup={handleRenameGroup}
-                    onDeleteGroup={handleDeleteGroup}
+                    updateItem={handleUpdateItem}
+                    deleteItem={handleDeleteItem}
+                    reorderItem={handleReorderItem}
+                    handleAddColumn={(columnType, columnTitle) => handleAddColumn(activeBoard.id, columnType, columnTitle)}
+                    updateColumnOptions={(colId, newOptions) => handleUpdateColumnOptions(activeBoard.id, colId, newOptions)}
+                    onOpenItem={(groupId, itemId) => {
+                      setTaskDrawerOpen(true);
+                      setActiveItemContext({ groupId, itemId });
+                    }}
+                    searchQuery={searchQuery}
+                    filters={filters}
+                    isGroupedByStatus={isGroupedByStatus}
                   />
                 )}
-                {activeBoard.type === 'grid' && viewType === 'kanban' && <KanbanView board={activeBoard} onUpdateBoard={handleUpdateBoardGroups} />}
-                {activeBoard.type === 'grid' && viewType === 'gantt' && <GanttView board={activeBoard} />}
-                {activeBoard.type === 'grid' && viewType === 'form' && <FormView board={activeBoard} onSubmit={handleFormSubmit} />}
+                {activeBoard.type === 'grid' && viewType === 'kanban' && <KanbanView board={activeBoard} updateItem={handleUpdateItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} />}
+                {activeBoard.type === 'grid' && viewType === 'gantt' && <GanttView board={activeBoard} updateItem={handleUpdateItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} />}
+                {activeBoard.type === 'grid' && viewType === 'form' && <FormView board={activeBoard} onSubmit={(data) => { if (activeBoard.groups.length > 0) { const firstGroup = activeBoard.groups[0]; handleAddItem(firstGroup.id, data.title || "New Item"); } }} />}
                 {activeBoard.type === 'doc' && <DocumentView board={activeBoard} onClose={() => {
                   const firstGrid = boards.find(b => b.type === 'grid');
                   if (firstGrid) setActiveBoardId(firstGrid.id);
@@ -714,6 +727,13 @@ const App = () => {
           )}
         </div>
       </div>
+
+      <TaskDrawer 
+        isOpen={taskDrawerOpen} 
+        onClose={() => setTaskDrawerOpen(false)} 
+        task={getActiveTask()} 
+        onUpdate={handleUpdateActiveTaskContext} 
+      />
     </div>
   );
 }
