@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { FiGrid, FiFolder, FiSearch, FiMoreHorizontal, FiPlus, FiLayout, FiChevronDown, FiChevronRight, FiFileText, FiEdit2, FiTrash2 , FiHome, FiCheckSquare, FiVideo, FiStar} from 'react-icons/fi';
 
-const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoard, onRenameBoard, onMoveBoard }) => {
+const Sidebar = ({ 
+  boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoard, onRenameBoard, onMoveBoard,
+  activeSpecialView, onSelectSpecialView, onResetToBlank
+}) => {
   const [hoveredId, setHoveredId] = useState(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [addMenuParentId, setAddMenuParentId] = useState(null);
@@ -13,9 +16,13 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
   const [expandedFolders, setExpandedFolders] = useState({});
   const [draggedBoardId, setDraggedBoardId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [favorites, setFavorites] = useState(['board-passapp-1']);
   const menuRef = useRef(null);
   const actionMenuRef = useRef(null);
   const searchInputRef = useRef(null);
+  const moreMenuRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -24,6 +31,9 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
       }
       if (actionMenuRef.current && !actionMenuRef.current.contains(event.target)) {
         setActionMenuId(null);
+      }
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
+        setShowMoreMenu(false);
       }
       if (isSearching && searchInputRef.current && !searchInputRef.current.contains(event.target) && !searchQuery) {
         setIsSearching(false);
@@ -158,7 +168,9 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
   };
 
   const isSearchActive = searchQuery.trim().length > 0;
-  const filteredBoards = boards.filter(b => b.title.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredBoards = boards
+    .filter(b => (!showFavoritesOnly || favorites.includes(b.id)))
+    .filter(b => b.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const renderItem = (board, depth = 0) => {
     const isFolder = board.type === 'folder';
@@ -173,7 +185,7 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
           onDragOver={(e) => handleDragOver(e, board)}
           onDragLeave={(e) => handleDragLeave(e, board)}
           onDrop={(e) => handleDrop(e, board)}
-          className={`sidebar-menu-item ${board.id === activeBoardId ? 'active' : ''} ${dragOverId === board.id ? 'drag-over' : ''}`}
+          className={`sidebar-menu-item ${!activeSpecialView && board.id === activeBoardId ? 'active' : ''} ${dragOverId === board.id ? 'drag-over' : ''}`}
           onClick={() => isFolder ? toggleFolder({stopPropagation: () => {}}, board.id) : onSelectBoard(board.id)}
           onMouseEnter={() => setHoveredId(board.id)}
           onMouseLeave={() => setHoveredId(null)}
@@ -254,20 +266,119 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
     );
   };
 
-  const rootItems = boards.filter(b => !b.parentId || !boards.some(p => p.id === b.parentId));
+  const rootItems = boards
+    .filter(b => (!showFavoritesOnly || favorites.includes(b.id) || boards.some(child => child.parentId === b.id && favorites.includes(child.id))))
+    .filter(b => !b.parentId || !boards.some(p => p.id === b.parentId));
 
   return (
     <div className="sidebar">
-      {/* Top Static Items */}
-      <div style={{ padding: '1rem 0' }}>
-        <div className="sidebar-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><FiHome size={18} /> Home</div>
-        <div className="sidebar-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><FiCheckSquare size={18} /> My work</div>
-        <div className="sidebar-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><FiVideo size={18} /> AI Notetaker</div>
-        <div className="sidebar-menu-item" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}><FiMoreHorizontal size={18} /> More</div>
+      {/* Top Navigation Items */}
+      <div style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div 
+          className={`sidebar-menu-item ${!activeSpecialView && activeBoardId === 'board-passapp-1' ? 'active' : ''}`}
+          onClick={() => {
+            onSelectSpecialView && onSelectSpecialView(null);
+            const firstGrid = boards.find(b => b.type === 'grid');
+            if (firstGrid) onSelectBoard(firstGrid.id);
+          }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
+        >
+          <FiHome size={18} /> Home
+        </div>
+
+        <div 
+          className={`sidebar-menu-item ${activeSpecialView === 'my-work' ? 'active' : ''}`}
+          onClick={() => onSelectSpecialView && onSelectSpecialView('my-work')}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
+        >
+          <FiCheckSquare size={18} /> My work
+        </div>
+
+        <div 
+          className={`sidebar-menu-item ${activeSpecialView === 'ai-notetaker' ? 'active' : ''}`}
+          onClick={() => onSelectSpecialView && onSelectSpecialView('ai-notetaker')}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
+        >
+          <FiVideo size={18} /> AI Notetaker
+        </div>
+
+        <div 
+          ref={moreMenuRef}
+          className="sidebar-menu-item"
+          onClick={() => setShowMoreMenu(!showMoreMenu)}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', cursor: 'pointer', position: 'relative' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <FiMoreHorizontal size={18} /> More
+          </div>
+          <FiChevronDown size={14} style={{ transform: showMoreMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+
+          {showMoreMenu && (
+            <div 
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: '10px',
+                zIndex: 100,
+                background: '#20243f',
+                border: '1px solid var(--border-color)',
+                borderRadius: '8px',
+                padding: '6px',
+                minWidth: '220px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div 
+                className="add-menu-item"
+                onClick={() => {
+                  const dashboardBoard = boards.find(b => b.type === 'dashboard');
+                  if (dashboardBoard) {
+                    onSelectSpecialView && onSelectSpecialView(null);
+                    onSelectBoard(dashboardBoard.id);
+                  }
+                  setShowMoreMenu(false);
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', cursor: 'pointer' }}
+              >
+                <FiLayout color="#579bfc" /> แดชบอร์ดสรุปผลรวม (Dashboard)
+              </div>
+              <div 
+                className="add-menu-item"
+                onClick={() => {
+                  if (window.confirm("คุณต้องการรีเซ็ตเป็นบอร์ดว่างเปล่า (Blank Board) ใช่หรือไม่? ข้อมูลตัวอย่างจะถูกล้าง")) {
+                    onResetToBlank && onResetToBlank();
+                    setShowMoreMenu(false);
+                  }
+                }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', cursor: 'pointer', color: '#ff6b6b' }}
+              >
+                <FiTrash2 color="#ff6b6b" /> รีเซ็ตเป็นบอร์ดว่าง (Reset to Blank)
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       
-      <div style={{ padding: '0 1rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        Favorites <FiChevronRight size={12} />
+      <div 
+        onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+        style={{ 
+          padding: '0.6rem 1rem', 
+          fontSize: '0.8rem', 
+          color: showFavoritesOnly ? 'var(--accent-blue)' : 'var(--text-muted)', 
+          marginTop: '0.25rem', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          cursor: 'pointer',
+          borderRadius: '4px'
+        }}
+      >
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <FiStar size={14} color={showFavoritesOnly ? '#fdab3d' : 'currentColor'} />
+          Favorites {showFavoritesOnly && '(เปิดใช้งาน)'}
+        </span>
+        <FiChevronRight size={12} style={{ transform: showFavoritesOnly ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
       </div>
 
       <div style={{ padding: '0 1rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

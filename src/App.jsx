@@ -10,6 +10,8 @@ import GanttView from './components/GanttView';
 import FormView from './components/FormView';
 import TaskDrawer from './components/TaskDrawer';
 import TopActions from './components/TopActions';
+import MyWorkView from './components/MyWorkView';
+import AiNotetakerView from './components/AiNotetakerView';
 import './index.css';
 
 const INITIAL_STATUS_OPTIONS = [
@@ -54,7 +56,29 @@ const INITIAL_BOARDS = [
     title: 'ภาพรวมโปรเจกต์',
     type: 'dashboard',
     parentId: 'folder-dashboard',
-    widgets: []
+    widgets: [
+      {
+        id: 'w1',
+        title: 'สถานะงานในโปรเจกต์ (Status)',
+        type: 'pie',
+        sourceBoardId: 'board-passapp-1',
+        groupByColumnId: 'status'
+      },
+      {
+        id: 'w2',
+        title: 'งานแยกตามแผนก (Department)',
+        type: 'bar',
+        sourceBoardId: 'board-passapp-1',
+        groupByColumnId: 'department'
+      },
+      {
+        id: 'w3',
+        title: 'จำนวนงานทั้งหมด',
+        type: 'number',
+        sourceBoardId: 'board-passapp-1',
+        groupByColumnId: 'status'
+      }
+    ]
   },
   {
     id: 'folder-passapp',
@@ -134,7 +158,7 @@ const INITIAL_BOARDS = [
 const GROUP_COLORS = ['var(--group-color-1)', 'var(--group-color-2)', 'var(--group-color-3)', 'var(--group-color-4)', 'var(--accent-blue)', 'var(--accent-purple)'];
 const App = () => {
   const [boards, setBoards] = useState(() => {
-    const saved = localStorage.getItem('monday_boards_v5');
+    const saved = localStorage.getItem('monday_boards_v6');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -160,6 +184,7 @@ const App = () => {
   });
 
   const [activeBoardId, setActiveBoardId] = useState('board-passapp-1');
+  const [activeSpecialView, setActiveSpecialView] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({});
   const [isGroupedByStatus, setIsGroupedByStatus] = useState(false);
@@ -168,7 +193,7 @@ const App = () => {
   
 
   useEffect(() => {
-    localStorage.setItem('monday_boards_v5', JSON.stringify(boards));
+    localStorage.setItem('monday_boards_v6', JSON.stringify(boards));
     if (boards.length > 0 && !boards.find(b => b.id === activeBoardId)) {
       setActiveBoardId(boards[0].id);
     }
@@ -633,15 +658,58 @@ const App = () => {
         <Sidebar 
           boards={boards}
           activeBoardId={activeBoardId}
-          onSelectBoard={setActiveBoardId}
+          onSelectBoard={(id) => {
+            setActiveSpecialView(null);
+            setActiveBoardId(id);
+          }}
+          activeSpecialView={activeSpecialView}
+          onSelectSpecialView={(view) => setActiveSpecialView(view)}
           onAddBoard={handleAddBoard}
           onDeleteBoard={handleDeleteBoard}
           onRenameBoard={handleRenameBoard}
           onMoveBoard={handleMoveBoard}
+          onResetToBlank={() => {
+            const blankBoard = {
+              id: 'board-1',
+              title: 'New Board',
+              type: 'grid',
+              color: '#0085ff',
+              columns: DEFAULT_COLUMNS,
+              groups: [
+                {
+                  id: 'g1',
+                  title: 'Group 1',
+                  color: '#579bfc',
+                  items: []
+                }
+              ]
+            };
+            setBoards([blankBoard]);
+            setActiveBoardId('board-1');
+            setActiveSpecialView(null);
+          }}
         />
         
         <div className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)', borderTopLeftRadius: '8px', borderLeft: '1px solid var(--border-color)', borderTop: '1px solid var(--border-color)', marginTop: '0.5rem', overflow: 'hidden' }}>
-          {activeBoard ? (
+          {activeSpecialView === 'my-work' ? (
+            <MyWorkView 
+              boards={boards}
+              onSelectBoard={(id) => {
+                setActiveSpecialView(null);
+                setActiveBoardId(id);
+              }}
+              onOpenItem={(groupId, itemId) => {
+                setTaskDrawerOpen(true);
+                setActiveItemContext({ groupId, itemId });
+              }}
+              updateItem={handleUpdateItem}
+            />
+          ) : activeSpecialView === 'ai-notetaker' ? (
+            <AiNotetakerView 
+              boards={boards}
+              onAddTask={(groupId, title) => handleAddItem(groupId, title)}
+            />
+          ) : activeBoard ? (
             <>
               {/* Board Header */}
               <div className="board-header">
@@ -718,6 +786,13 @@ const App = () => {
                   const firstGrid = boards.find(b => b.type === 'grid');
                   if (firstGrid) setActiveBoardId(firstGrid.id);
                 }} />}
+                {activeBoard.type === 'dashboard' && (
+                  <DashboardView 
+                    board={activeBoard} 
+                    allBoards={boards} 
+                    updateDashboard={handleUpdateDashboard} 
+                  />
+                )}
               </div>
             </>
           ) : (
