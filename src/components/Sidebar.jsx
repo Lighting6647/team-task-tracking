@@ -254,7 +254,7 @@ const Sidebar = ({ boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoa
     );
   };
 
-  const rootItems = boards.filter(b => !b.parentId);
+  const rootItems = boards.filter(b => !b.parentId || !boards.some(p => p.id === b.parentId));
 
   return (
     <div className="sidebar">
