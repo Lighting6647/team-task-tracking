@@ -765,11 +765,23 @@ const App = () => {
                 {activeBoard.type === 'grid' && viewType === 'table' && (
                   <TableView 
                     board={activeBoard} 
+                    boardId={activeBoard.id}
+                    columns={activeBoard.columns}
+                    groups={getProcessedGroups()}
                     updateItem={handleUpdateItem}
+                    addItem={handleAddItem}
+                    addSubitem={handleAddSubitem}
                     deleteItem={handleDeleteItem}
+                    addGroup={handleAddGroup}
+                    deleteGroup={handleDeleteGroup}
+                    renameGroup={handleRenameGroup}
+                    addColumn={handleAddColumn}
+                    renameColumn={handleRenameColumn}
+                    deleteColumn={handleDeleteColumn}
+                    updateColumnOptions={handleUpdateColumnOptions}
+                    updateColumnWidth={handleUpdateColumnWidth}
+                    reorderColumns={handleReorderColumns}
                     reorderItem={handleReorderItem}
-                    handleAddColumn={(columnType, columnTitle) => handleAddColumn(activeBoard.id, columnType, columnTitle)}
-                    updateColumnOptions={(colId, newOptions) => handleUpdateColumnOptions(activeBoard.id, colId, newOptions)}
                     onOpenItem={(groupId, itemId) => {
                       setTaskDrawerOpen(true);
                       setActiveItemContext({ groupId, itemId });

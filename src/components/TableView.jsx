@@ -7,13 +7,36 @@ const TableView = ({
   boardId: propBoardId, 
   columns: propColumns, 
   groups: propGroups, 
-  updateItem, addItem, addSubitem, deleteItem, addGroup, deleteGroup, renameGroup, 
-  addColumn, renameColumn, deleteColumn, updateColumnOptions, updateColumnWidth, reorderColumns,
+  updateItem,
+  addItem: propAddItem, handleAddItem,
+  addSubitem: propAddSubitem, handleAddSubitem,
+  deleteItem,
+  addGroup: propAddGroup, handleAddGroup,
+  deleteGroup: propDeleteGroup, handleDeleteGroup,
+  renameGroup: propRenameGroup, handleRenameGroup, 
+  addColumn: propAddColumn, handleAddColumn,
+  renameColumn: propRenameColumn, handleRenameColumn,
+  deleteColumn: propDeleteColumn, handleDeleteColumn,
+  updateColumnOptions: propUpdateColumnOptions, handleUpdateColumnOptions,
+  updateColumnWidth: propUpdateColumnWidth, handleUpdateColumnWidth,
+  reorderColumns: propReorderColumns, handleReorderColumns,
   hiddenColumns = [], isGroupedByStatus = false, onOpenItem, reorderItem
 }) => {
   const boardId = propBoardId || board?.id;
   const columns = (propColumns && propColumns.length > 0) ? propColumns : (board?.columns || []);
   const groups = propGroups || board?.groups || [];
+
+  const addColumn = propAddColumn || handleAddColumn;
+  const addItem = propAddItem || handleAddItem;
+  const addSubitem = propAddSubitem || handleAddSubitem;
+  const addGroup = propAddGroup || handleAddGroup;
+  const deleteGroup = propDeleteGroup || handleDeleteGroup;
+  const renameGroup = propRenameGroup || handleRenameGroup;
+  const renameColumn = propRenameColumn || handleRenameColumn;
+  const deleteColumn = propDeleteColumn || handleDeleteColumn;
+  const updateColumnOptions = propUpdateColumnOptions || handleUpdateColumnOptions;
+  const updateColumnWidth = propUpdateColumnWidth || handleUpdateColumnWidth;
+  const reorderColumns = propReorderColumns || handleReorderColumns;
   const [newItems, setNewItems] = useState({});
   const [newSubitems, setNewSubitems] = useState({});
   const [expandedItems, setExpandedItems] = useState({});
@@ -123,7 +146,9 @@ const TableView = ({
   };
 
   const handleAddNewColumn = (type, title) => {
-    addColumn(boardId, type, title);
+    if (addColumn) {
+      addColumn(boardId, type, title);
+    }
     setOpenColumnMenuGroupId(null);
   };
 
