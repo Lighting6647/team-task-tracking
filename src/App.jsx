@@ -68,7 +68,7 @@ const App = () => {
           }
           return b;
         });
-      } catch (e) {
+      } catch {
         return INITIAL_BOARDS;
       }
     }
