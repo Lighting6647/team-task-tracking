@@ -13,6 +13,9 @@ import TopActions from './components/TopActions';
 import MyWorkView from './components/MyWorkView';
 import AiNotetakerView from './components/AiNotetakerView';
 import PresentationView from './components/PresentationView';
+import AiCopilot from './components/AiCopilot';
+import NotificationCenter from './components/NotificationCenter';
+import { FiSun, FiMoon, FiUpload } from 'react-icons/fi';
 import './index.css';
 
 const INITIAL_STATUS_OPTIONS = [
@@ -216,6 +219,27 @@ const App = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({});
   const [isGroupedByStatus, setIsGroupedByStatus] = useState(false);
+  const [theme, setTheme] = useState('dark');
+  const fileInputRef = React.useRef(null);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'light') {
+      root.style.setProperty('--bg-main', '#f6f7fb');
+      root.style.setProperty('--bg-glass', 'rgba(255, 255, 255, 0.95)');
+      root.style.setProperty('--bg-panel', '#ffffff');
+      root.style.setProperty('--text-main', '#323338');
+      root.style.setProperty('--text-muted', '#676879');
+      root.style.setProperty('--border-color', '#d0d4e4');
+    } else {
+      root.style.setProperty('--bg-main', '#0f111a');
+      root.style.setProperty('--bg-glass', 'rgba(29, 30, 47, 0.85)');
+      root.style.setProperty('--bg-panel', '#1d1e2f');
+      root.style.setProperty('--text-main', '#ffffff');
+      root.style.setProperty('--text-muted', '#a0a2b5');
+      root.style.setProperty('--border-color', 'rgba(255, 255, 255, 0.1)');
+    }
+  }, [theme]);
   
   
   
@@ -459,6 +483,48 @@ const App = () => {
     link.href = URL.createObjectURL(blob);
     link.download = `${activeBoard.title || 'board'}_excel.csv`;
     link.click();
+  };
+
+  const handleImportCSV = (csvText) => {
+    if (!activeBoard || activeBoard.type !== 'grid') return;
+    const lines = csvText.split('\n').filter(l => l.trim().length > 0);
+    if (lines.length < 2) return;
+
+    const newItems = [];
+    for (let i = 1; i < lines.length; i++) {
+      const parts = lines[i].split(',').map(p => p.replace(/^"|"$/g, '').trim());
+      if (parts.length >= 2) {
+        newItems.push({
+          id: uuidv4(),
+          title: parts[1] || `Imported Item ${i}`,
+          status: parts[2] ? parts[2].toLowerCase() : 'working',
+          owner: parts[3] || 'Imported User'
+        });
+      }
+    }
+
+    if (newItems.length > 0 && activeBoard.groups.length > 0) {
+      const firstGroupId = activeBoard.groups[0].id;
+      const updatedGroups = activeBoard.groups.map(g => {
+        if (g.id === firstGroupId) {
+          return { ...g, items: [...g.items, ...newItems] };
+        }
+        return g;
+      });
+      updateActiveBoardGroups(updatedGroups);
+      alert(`นำเข้าข้อมูลจาก Excel / CSV เรียบร้อยแล้ว ${newItems.length} รายการ!`);
+    }
+  };
+
+  const handleImportFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      handleImportCSV(evt.target.result);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const handleAddColumn = (boardId, columnType, columnTitle) => {
@@ -780,10 +846,18 @@ const App = () => {
                       style={{ fontSize: '1.75rem', fontWeight: 600, width: '300px' }}
                     />
                   </div>
-                  <div style={{ display: 'flex', gap: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  <div style={{ display: 'flex', gap: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', alignItems: 'center' }}>
+                    <NotificationCenter boards={boards} />
+                    <button 
+                      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
+                      style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-muted)', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}
+                      title="สลับธีม สว่าง / มืด"
+                    >
+                      {theme === 'dark' ? <FiSun color="#fdab3d" size={14} /> : <FiMoon color="#579bfc" size={14} />}
+                      {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                    </button>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}><FiSettings /> Integrate</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}><FiSettings /> Automate</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}><FiUserPlus /> Invite / 1</div>
                   </div>
                 </div>
                 
@@ -813,7 +887,11 @@ const App = () => {
                   <button className="toolbar-btn"><FiFilter /> Filter</button>
                   <button className="toolbar-btn"><FiArrowDown /> Sort</button>
                   <button className="toolbar-btn"><FiEyeOff /> Hide</button>
-                  <button className="toolbar-btn" onClick={handleExportExcel} style={{ color: '#00c875', borderColor: 'rgba(0, 200, 117, 0.4)' }}>📊 Export Excel / CSV</button>
+                  <button className="toolbar-btn" onClick={handleExportExcel} style={{ color: '#00c875', borderColor: 'rgba(0, 200, 117, 0.4)' }}>📊 Export Excel</button>
+                  <button className="toolbar-btn" onClick={() => fileInputRef.current?.click()} style={{ color: '#579bfc', borderColor: 'rgba(87, 155, 252, 0.4)' }}>
+                    <FiUpload style={{ marginRight: '4px' }} /> Import Excel / CSV
+                  </button>
+                  <input type="file" ref={fileInputRef} accept=".csv" onChange={handleImportFileChange} style={{ display: 'none' }} />
                   <button className="toolbar-btn"><FiMoreHorizontal /></button>
                 </div>
               )}
@@ -879,6 +957,13 @@ const App = () => {
         onClose={() => setTaskDrawerOpen(false)} 
         task={getActiveTask()} 
         onUpdate={handleUpdateActiveTaskContext} 
+      />
+
+      <AiCopilot 
+        activeBoard={activeBoard} 
+        boards={boards} 
+        onAddItem={handleAddItem} 
+        onAddDocument={handleAddBoard} 
       />
     </div>
   );
