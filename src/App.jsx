@@ -110,6 +110,33 @@ const INITIAL_BOARDS = [
     ]
   },
   {
+    id: 'doc-passapp-proposal',
+    title: '📄 เอกสารข้อเสนอโครงการ Pass App (Proposal)',
+    type: 'doc',
+    parentId: 'folder-passapp',
+    content: `<h1>📄 เอกสารข้อเสนอโครงการระบบ Pass App (Project Proposal)</h1>
+<p><strong>วันที่เปิดโครงการ:</strong> 1 ตุลาคม 2026 | <strong>ผู้เสนอโครงการ:</strong> ทีมพัฒนาซอฟต์แวร์</p>
+<hr/>
+<h2>1. วัตถุประสงค์ของโครงการ (Objectives)</h2>
+<p>เพื่อพัฒนาแอปพลิเคชัน <strong>Pass App</strong> สำหรับการบริหารจัดการสิทธิ์และการผ่านเข้าออกพื้นที่ขององค์กรอย่างมีประสิทธิภาพ ปลอดภัย และสามารถติดตามสถานะงานได้ในรูปแบบ Real-time</p>
+
+<h2>2. ขอบเขตการทำงาน (Scope of Work)</h2>
+<ul>
+  <li><strong>ระบบ Authentication & Role Access:</strong> รองรับการเข้าสู่ระบบผ่าน SSO และการกำหนดสิทธิ์ตามแผนก</li>
+  <li><strong>ระบบชำระเงิน (Payment Gateway Integration):</strong> เชื่อมต่อกับธนาคารชั้นนำสำหรับการชำระค่าบริการผ่าน QR Code / Credit Card</li>
+  <li><strong>การรองรับระบบปฏิบัติการ iOS & Android:</strong> ดีไซน์ UI/UX ที่ทันสมัยตามมาตรฐานองค์กร</li>
+</ul>
+
+<h2>3. แผนการดำเนินงานและไทม์ไลน์ (Timeline)</h2>
+<blockquote style="background: rgba(87, 155, 252, 0.1); padding: 10px; border-left: 4px solid #579bfc;">
+  <p><strong>Sprint 1:</strong> ออกแบบ UI/UX และระบบ Login (กำหนดเสร็จ 5 ต.ค. 2026)</p>
+  <p><strong>Sprint 2:</strong> เชื่อมต่อ Payment Gateway และทดสอบระบบความปลอดภัย (กำหนดเสร็จ 15 ต.ค. 2026)</p>
+</blockquote>
+
+<h2>4. งบประมาณและการอนุมัติ (Budget & Approval)</h2>
+<p>งบประมาณรวมทั้งสิ้น <u>250,000 บาท</u> (รวมค่าบริการ Cloud Server AWS และการรับประกันหลังส่งมอบ 1 ปี)</p>`
+  },
+  {
     id: 'folder-ios',
     title: 'IOS,Asset',
     type: 'folder',
@@ -158,7 +185,7 @@ const INITIAL_BOARDS = [
 const GROUP_COLORS = ['var(--group-color-1)', 'var(--group-color-2)', 'var(--group-color-3)', 'var(--group-color-4)', 'var(--accent-blue)', 'var(--accent-purple)'];
 const App = () => {
   const [boards, setBoards] = useState(() => {
-    const saved = localStorage.getItem('monday_boards_v6');
+    const saved = localStorage.getItem('monday_boards_v7');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -193,7 +220,7 @@ const App = () => {
   
 
   useEffect(() => {
-    localStorage.setItem('monday_boards_v6', JSON.stringify(boards));
+    localStorage.setItem('monday_boards_v7', JSON.stringify(boards));
     if (boards.length > 0 && !boards.find(b => b.id === activeBoardId)) {
       setActiveBoardId(boards[0].id);
     }
