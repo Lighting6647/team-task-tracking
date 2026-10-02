@@ -16,6 +16,8 @@ import PresentationView from './components/PresentationView';
 import AiCopilot from './components/AiCopilot';
 import NotificationCenter from './components/NotificationCenter';
 import { FiSun, FiMoon, FiUpload } from 'react-icons/fi';
+import IntegrationsModal from './components/IntegrationsModal';
+import AutomationsModal from './components/AutomationsModal';
 import './index.css';
 
 const INITIAL_STATUS_OPTIONS = [
@@ -220,6 +222,8 @@ const App = () => {
   const [filters, setFilters] = useState({});
   const [isGroupedByStatus, setIsGroupedByStatus] = useState(false);
   const [theme, setTheme] = useState('dark');
+  const [integrationsOpen, setIntegrationsOpen] = useState(false);
+  const [automationsOpen, setAutomationsOpen] = useState(false);
   const fileInputRef = React.useRef(null);
 
   useEffect(() => {
@@ -856,8 +860,20 @@ const App = () => {
                       {theme === 'dark' ? <FiSun color="#fdab3d" size={14} /> : <FiMoon color="#579bfc" size={14} />}
                       {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
                     </button>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}><FiSettings /> Integrate</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}><FiSettings /> Automate</div>
+                    <div 
+                      onClick={() => setIntegrationsOpen(true)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: integrationsOpen ? '#579bfc' : 'inherit' }}
+                      title="เปิดศูนย์เชื่อมต่อระบบภายนอก (Integrations)"
+                    >
+                      <FiSettings /> Integrate
+                    </div>
+                    <div 
+                      onClick={() => setAutomationsOpen(true)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: automationsOpen ? '#a259ff' : 'inherit' }}
+                      title="เปิดศูนย์ทำงานอัตโนมัติ (Automations)"
+                    >
+                      <FiSettings /> Automate
+                    </div>
                   </div>
                 </div>
                 
@@ -964,6 +980,16 @@ const App = () => {
         boards={boards} 
         onAddItem={handleAddItem} 
         onAddDocument={handleAddBoard} 
+      />
+
+      <IntegrationsModal 
+        isOpen={integrationsOpen} 
+        onClose={() => setIntegrationsOpen(false)} 
+      />
+
+      <AutomationsModal 
+        isOpen={automationsOpen} 
+        onClose={() => setAutomationsOpen(false)} 
       />
     </div>
   );
