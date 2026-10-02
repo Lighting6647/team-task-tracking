@@ -12,6 +12,7 @@ import TaskDrawer from './components/TaskDrawer';
 import TopActions from './components/TopActions';
 import MyWorkView from './components/MyWorkView';
 import AiNotetakerView from './components/AiNotetakerView';
+import PresentationView from './components/PresentationView';
 import './index.css';
 
 const INITIAL_STATUS_OPTIONS = [
@@ -431,6 +432,35 @@ const App = () => {
     setBoards(boards.map(b => b.id === boardId ? { ...b, content } : b));
   };
 
+  const handleExportExcel = () => {
+    if (!activeBoard || activeBoard.type !== 'grid') return;
+    let csv = [];
+    const cols = activeBoard.columns || DEFAULT_COLUMNS;
+    const headers = ['Group', 'Item', ...cols.map(c => c.title)];
+    csv.push(headers.map(h => `"${h}"`).join(','));
+
+    (activeBoard.groups || []).forEach(g => {
+      (g.items || []).forEach(item => {
+        const row = [
+          g.title,
+          item.title || '',
+          ...cols.map(c => {
+            const val = item[c.id];
+            if (typeof val === 'object' && val !== null) return JSON.stringify(val);
+            return val !== undefined && val !== null ? String(val) : '';
+          })
+        ];
+        csv.push(row.map(r => `"${r.replace(/"/g, '""')}"`).join(','));
+      });
+    });
+
+    const blob = new Blob(['\uFEFF' + csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${activeBoard.title || 'board'}_excel.csv`;
+    link.click();
+  };
+
   const handleAddColumn = (boardId, columnType, columnTitle) => {
     setBoards(boards.map(b => {
       if (b.id !== boardId) return b;
@@ -764,6 +794,7 @@ const App = () => {
                     <div className={`board-tab ${viewType === 'kanban' ? 'active' : ''}`} onClick={() => setViewType('kanban')}>Kanban</div>
                     <div className={`board-tab ${viewType === 'gantt' ? 'active' : ''}`} onClick={() => setViewType('gantt')}>Timeline</div>
                     <div className={`board-tab ${viewType === 'form' ? 'active' : ''}`} onClick={() => setViewType('form')}>Form</div>
+                    <div className={`board-tab ${viewType === 'presentation' ? 'active' : ''}`} onClick={() => setViewType('presentation')}>Presentation 🖥️</div>
                   </div>
                 )}
               </div>
@@ -782,7 +813,7 @@ const App = () => {
                   <button className="toolbar-btn"><FiFilter /> Filter</button>
                   <button className="toolbar-btn"><FiArrowDown /> Sort</button>
                   <button className="toolbar-btn"><FiEyeOff /> Hide</button>
-                  <button className="toolbar-btn"><FiGrid /> Group by</button>
+                  <button className="toolbar-btn" onClick={handleExportExcel} style={{ color: '#00c875', borderColor: 'rgba(0, 200, 117, 0.4)' }}>📊 Export Excel / CSV</button>
                   <button className="toolbar-btn"><FiMoreHorizontal /></button>
                 </div>
               )}
@@ -821,6 +852,7 @@ const App = () => {
                 {activeBoard.type === 'grid' && viewType === 'kanban' && <KanbanView board={activeBoard} updateItem={handleUpdateItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} />}
                 {activeBoard.type === 'grid' && viewType === 'gantt' && <GanttView board={activeBoard} updateItem={handleUpdateItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} />}
                 {activeBoard.type === 'grid' && viewType === 'form' && <FormView board={activeBoard} onSubmit={(data) => { if (activeBoard.groups.length > 0) { const firstGroup = activeBoard.groups[0]; handleAddItem(firstGroup.id, data.title || "New Item"); } }} />}
+                {activeBoard.type === 'grid' && viewType === 'presentation' && <PresentationView board={activeBoard} />}
                 {activeBoard.type === 'doc' && <DocumentView board={activeBoard} onClose={() => {
                   const firstGrid = boards.find(b => b.type === 'grid');
                   if (firstGrid) setActiveBoardId(firstGrid.id);

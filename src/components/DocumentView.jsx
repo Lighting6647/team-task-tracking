@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiSave, FiFileText, FiCheck, FiRefreshCw, FiX, FiPrinter, FiFile, FiCopy, FiInfo } from 'react-icons/fi';
+import { FiSave, FiFileText, FiCheck, FiRefreshCw, FiX, FiPrinter, FiFile, FiCopy, FiInfo, FiLayout, FiMaximize } from 'react-icons/fi';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -59,6 +59,7 @@ const DocumentView = ({ board, updateDocument, onClose }) => {
   const [content, setContent] = useState(board.content || '');
   const [saveStatus, setSaveStatus] = useState('');
   const [showTemplates, setShowTemplates] = useState(false);
+  const [viewMode, setViewMode] = useState('a4'); // 'a4' | 'full'
   const timeoutRef = useRef(null);
   const isFirstRender = useRef(true);
 
@@ -171,14 +172,50 @@ const DocumentView = ({ board, updateDocument, onClose }) => {
           <div>
             <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>{board.title || 'Document Editor'}</h3>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <FiInfo size={12} /> Office Rich Text Editor (บันทึกอัตโนมัติ)
+              <FiInfo size={12} /> MS Word Document Editor (บันทึกอัตโนมัติ)
             </span>
           </div>
         </div>
 
         {/* Action Controls */}
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           
+          {/* View Mode Toggle */}
+          <div style={{ background: '#17192e', padding: '3px', borderRadius: '6px', border: '1px solid var(--border-color)', display: 'flex' }}>
+            <button
+              onClick={() => setViewMode('a4')}
+              style={{
+                background: viewMode === 'a4' ? '#0085ff' : 'transparent',
+                color: '#fff',
+                border: 'none',
+                padding: '4px 10px',
+                borderRadius: '4px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                fontWeight: viewMode === 'a4' ? 600 : 400
+              }}
+              title="มุมมองหน้ากระดาษ A4 (สไตล์ MS Word)"
+            >
+              📄 หน้า A4 Word
+            </button>
+            <button
+              onClick={() => setViewMode('full')}
+              style={{
+                background: viewMode === 'full' ? '#0085ff' : 'transparent',
+                color: '#fff',
+                border: 'none',
+                padding: '4px 10px',
+                borderRadius: '4px',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                fontWeight: viewMode === 'full' ? 600 : 400
+              }}
+              title="มุมมองเต็มจอ Dark Mode (สไตล์ Monday Docs)"
+            >
+              🖥️ เต็มจอ
+            </button>
+          </div>
+
           {/* Stats Badge */}
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.06)', padding: '0.4rem 0.8rem', borderRadius: '6px', display: 'flex', gap: '0.75rem' }}>
             <span>คำทั้งหมด: <strong style={{ color: 'var(--text-main)' }}>{wordCount}</strong></span>
@@ -303,12 +340,14 @@ const DocumentView = ({ board, updateDocument, onClose }) => {
       {/* Editor Main Container */}
       <div style={{ 
         flex: 1, 
-        background: '#20243f', 
+        background: viewMode === 'a4' ? '#121424' : '#20243f', 
         borderRadius: '10px',
         border: '1px solid var(--border-color)',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        alignItems: viewMode === 'a4' ? 'center' : 'stretch',
+        padding: viewMode === 'a4' ? '1.5rem 0' : 0
       }}>
         <style>
           {`
@@ -317,19 +356,27 @@ const DocumentView = ({ board, updateDocument, onClose }) => {
               border-bottom: 1px solid var(--border-color) !important;
               padding: 10px 16px !important;
               background: #1c2038;
+              width: 100%;
             }
             .ql-container.ql-snow {
               border: none !important;
               flex: 1;
               font-family: inherit;
               font-size: 1rem;
-              color: var(--text-main);
+              color: ${viewMode === 'a4' ? '#222' : 'var(--text-main)'};
               overflow-y: auto;
+              width: 100%;
             }
             .ql-editor {
-              padding: 2.5rem 3rem !important;
+              padding: ${viewMode === 'a4' ? '3rem 4rem' : '2.5rem 3rem'} !important;
               min-height: 100%;
               line-height: 1.7;
+              background-color: ${viewMode === 'a4' ? '#ffffff' : 'transparent'};
+              width: ${viewMode === 'a4' ? '820px' : '100%'};
+              margin: ${viewMode === 'a4' ? '0 auto' : 0};
+              box-shadow: ${viewMode === 'a4' ? '0 10px 30px rgba(0,0,0,0.5)' : 'none'};
+              border-radius: ${viewMode === 'a4' ? '4px' : 0};
+              color: ${viewMode === 'a4' ? '#222222' : 'var(--text-main)'};
             }
             .ql-snow .ql-stroke {
               stroke: var(--text-muted);
@@ -351,7 +398,7 @@ const DocumentView = ({ board, updateDocument, onClose }) => {
               border-color: var(--border-color);
             }
             .ql-editor.ql-blank::before {
-              color: rgba(255,255,255,0.3) !important;
+              color: ${viewMode === 'a4' ? '#999999' : 'rgba(255,255,255,0.3)'} !important;
               font-style: normal;
             }
           `}
@@ -361,8 +408,8 @@ const DocumentView = ({ board, updateDocument, onClose }) => {
           value={content} 
           onChange={setContent} 
           modules={modules}
-          placeholder="เริ่มพิมพ์เอกสารของคุณที่นี่... (รองรับการจัดรูปแบบตัวหนา ตัวเอียง จัดหัวข้อ ใส่ตาราง และเทมเพลต)"
-          style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+          placeholder="เริ่มพิมพ์เอกสารของคุณที่นี่... (รองรับการจัดรูปแบบตัวหนา ตัวเอียง จัดหัวข้อ ใส่ตาราง และเทมเพลต MS Word)"
+          style={{ height: '100%', display: 'flex', flexDirection: 'column', width: '100%' }}
         />
       </div>
     </div>
