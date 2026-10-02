@@ -6,7 +6,7 @@ const AiCopilot = ({ activeBoard, boards, onAddItem, onAddDocument }) => {
   const [messages, setMessages] = useState([
     {
       sender: 'ai',
-      text: 'สวัสดีครับ! ผมคือ Monday AI Assistant & Copilot 🤖 มีอะไรให้ผมช่วยสรุปข้อมูล สร้างงาน หรือร่างเอกสารให้คุณวันนี้ครับ?'
+      text: 'สวัสดีครับ! ผมคือ AI Assistant & Copilot 🤖 มีอะไรให้ผมช่วยสรุปข้อมูล สร้างงาน หรือร่างเอกสารให้คุณวันนี้ครับ?'
     }
   ]);
   const [input, setInput] = useState('');
@@ -77,7 +77,7 @@ const AiCopilot = ({ activeBoard, boards, onAddItem, onAddDocument }) => {
           onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
         >
           <FiZap size={18} />
-          <span>Monday AI Copilot</span>
+          <span>AI Copilot Assistant</span>
         </button>
       )}
 
@@ -103,7 +103,7 @@ const AiCopilot = ({ activeBoard, boards, onAddItem, onAddDocument }) => {
                 <FiZap size={16} color="#fff" />
               </div>
               <div>
-                <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.95rem' }}>Monday AI Copilot</div>
+                <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.95rem' }}>AI Copilot Assistant</div>
                 <div style={{ fontSize: '0.7rem', color: '#a259ff' }}>● พร้อมช่วยเหลือใน บอร์ด {activeBoard?.title}</div>
               </div>
             </div>
