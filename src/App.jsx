@@ -18,6 +18,7 @@ import NotificationCenter from './components/NotificationCenter';
 import { FiSun, FiMoon, FiUpload } from 'react-icons/fi';
 import IntegrationsModal from './components/IntegrationsModal';
 import AutomationsModal from './components/AutomationsModal';
+import SettingsModal from './components/SettingsModal';
 import './index.css';
 
 const INITIAL_STATUS_OPTIONS = [
@@ -224,6 +225,7 @@ const App = () => {
   const [theme, setTheme] = useState('dark');
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [automationsOpen, setAutomationsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const fileInputRef = React.useRef(null);
 
   useEffect(() => {
@@ -874,6 +876,13 @@ const App = () => {
                     >
                       <FiSettings /> Automate
                     </div>
+                    <div 
+                      onClick={() => setSettingsOpen(true)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: settingsOpen ? '#0085ff' : 'inherit' }}
+                      title="เปิดการตั้งค่าระบบและแก้ไข QR Code ชำระเงิน"
+                    >
+                      <FiSettings /> ตั้งค่า (Settings)
+                    </div>
                   </div>
                 </div>
                 
@@ -990,6 +999,11 @@ const App = () => {
       <AutomationsModal 
         isOpen={automationsOpen} 
         onClose={() => setAutomationsOpen(false)} 
+      />
+
+      <SettingsModal 
+        isOpen={settingsOpen} 
+        onClose={() => setSettingsOpen(false)} 
       />
     </div>
   );
