@@ -445,9 +445,42 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
   align-items: center;
   justify-content: center;
 }
-.status-badge.status-empty {
-  color: transparent;
-}
 .status-badge.status-empty:hover {
   color: white;
+}
+
+/* Mobile Native & Refactoring UI Polish Rules */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  overscroll-behavior: none;
+}
+
+.main-content, .sidebar, .board-container, .document-view-container {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+input, textarea, select {
+  font-size: 16px; /* Prevents auto-zoom on iOS inputs */
+}
+
+button, a, [role="button"], .sidebar-menu-item, .board-tab, .chip, .toolbar-btn {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Safe Area Insets for Mobile Notches & Bottom Indicator */
+.board-header {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.app-container {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
