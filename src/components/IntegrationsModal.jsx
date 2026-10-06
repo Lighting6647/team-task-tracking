@@ -45,6 +45,14 @@ const IntegrationsModal = ({ isOpen, onClose }) => {
   const [testingId, setTestingId] = useState(null);
   const [testSuccess, setTestSuccess] = useState(null);
 
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const toggleIntegration = (id) => {
@@ -62,19 +70,29 @@ const IntegrationsModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-      <div style={{ width: '100%', maxWidth: '680px', background: '#1c2038', border: '1px solid var(--border-color)', borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.6)', overflow: 'hidden', color: '#fff', display: 'flex', flexDirection: 'column' }}>
+    <div 
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="integrations-modal-title"
+      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}
+    >
+      <div className="modal-content" style={{ width: '100%', maxWidth: '680px', background: '#1c2038', border: '1px solid var(--border-color)', borderRadius: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.6)', overflow: 'hidden', color: '#fff', display: 'flex', flexDirection: 'column' }}>
         
         {/* Header */}
         <div style={{ padding: '1.25rem 1.5rem', background: '#20243f', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h3 id="integrations-modal-title" style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               🔌 Integrations Center (การเชื่อมต่อระบบภายนอก)
             </h3>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>เชื่อมต่อบอร์ดนี้เข้ากับ LINE, Email, MS Excel และ Cloud Storage</span>
           </div>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-            <FiX size={20} />
+          <button 
+            type="button"
+            onClick={onClose} 
+            aria-label="ปิดหน้าต่าง Integrations"
+            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '6px' }}
+          >
+            <FiX size={20} aria-hidden="true" />
           </button>
         </div>
 

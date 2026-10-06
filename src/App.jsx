@@ -231,20 +231,21 @@ const App = () => {
 
   useEffect(() => {
     const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
     if (theme === 'light') {
       root.style.setProperty('--bg-main', '#f6f7fb');
       root.style.setProperty('--bg-glass', 'rgba(255, 255, 255, 0.95)');
       root.style.setProperty('--bg-panel', '#ffffff');
-      root.style.setProperty('--text-main', '#323338');
-      root.style.setProperty('--text-muted', '#676879');
-      root.style.setProperty('--border-color', '#d0d4e4');
+      root.style.setProperty('--text-main', '#181b34');
+      root.style.setProperty('--text-muted', '#5a607f');
+      root.style.setProperty('--border-color', '#dbe0ea');
     } else {
       root.style.setProperty('--bg-main', '#0f111a');
       root.style.setProperty('--bg-glass', 'rgba(29, 30, 47, 0.85)');
       root.style.setProperty('--bg-panel', '#1d1e2f');
       root.style.setProperty('--text-main', '#ffffff');
-      root.style.setProperty('--text-muted', '#a0a2b5');
-      root.style.setProperty('--border-color', 'rgba(255, 255, 255, 0.1)');
+      root.style.setProperty('--text-muted', '#aab0c8');
+      root.style.setProperty('--border-color', 'rgba(255, 255, 255, 0.12)');
     }
   }, [theme]);
   
@@ -784,6 +785,21 @@ const App = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: 'var(--bg-main)' }}>
+      {/* WCAG 2.4.1 Skip to Main Content Link */}
+      <a href="#main-board-content" className="skip-to-content">
+        ข้ามไปยังเนื้อหาหลัก (Skip to main content)
+      </a>
+
+      {/* Screen Reader Live Status Region */}
+      <div 
+        role="status" 
+        aria-live="polite" 
+        className="sr-only" 
+        style={{ position: 'absolute', width: '1px', height: '1px', padding: 0, margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', border: 0 }}
+      >
+        {activeSpecialView === 'my-work' ? 'เปิดมุมมอง My Work' : activeSpecialView === 'ai-notetaker' ? 'เปิดมุมมอง AI Notetaker' : `เปิดบอร์ด ${activeBoard?.title || ''}`}
+      </div>
+
       {/* Mobile & Tablet App Bar (Visible on screens <= 1024px: iPhone, iPad, smartphone) */}
       <header className="mobile-top-bar">
         <div className="mobile-top-bar-left">
@@ -794,7 +810,7 @@ const App = () => {
             aria-label="Open navigation menu"
             title="เปิดเมนูนำทาง (Sidebar)"
           >
-            <FiMenu size={22} />
+            <FiMenu size={22} aria-hidden="true" />
           </button>
           <div className="mobile-app-branding">
             <span className="mobile-app-name">LightBeam OS</span>
@@ -814,8 +830,9 @@ const App = () => {
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
             className="mobile-theme-btn"
             title={theme === 'dark' ? 'สลับเป็น Light Mode' : 'สลับเป็น Dark Mode'}
+            aria-label={theme === 'dark' ? 'สลับเป็น Light Mode' : 'สลับเป็น Dark Mode'}
           >
-            {theme === 'dark' ? <FiSun color="#fdab3d" size={17} /> : <FiMoon color="#579bfc" size={17} />}
+            {theme === 'dark' ? <FiSun color="#fdab3d" size={17} aria-hidden="true" /> : <FiMoon color="#579bfc" size={17} aria-hidden="true" />}
           </button>
         </div>
       </header>
@@ -867,7 +884,7 @@ const App = () => {
           }}
         />
         
-        <div className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)', overflow: 'hidden' }}>
+        <main id="main-board-content" role="main" tabIndex={-1} className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)', overflow: 'hidden' }}>
           {activeSpecialView === 'my-work' ? (
             <MyWorkView 
               boards={boards}
@@ -943,36 +960,36 @@ const App = () => {
                 
                 {/* Board Tabs */}
                 {activeBoard.type === 'grid' && (
-                  <div className="board-tabs">
-                    <div className={`board-tab ${viewType === 'table' ? 'active' : ''}`} onClick={() => setViewType('table')}>Main table</div>
-                    <div className={`board-tab ${viewType === 'kanban' ? 'active' : ''}`} onClick={() => setViewType('kanban')}>Kanban</div>
-                    <div className={`board-tab ${viewType === 'gantt' ? 'active' : ''}`} onClick={() => setViewType('gantt')}>Timeline</div>
-                    <div className={`board-tab ${viewType === 'form' ? 'active' : ''}`} onClick={() => setViewType('form')}>Form</div>
-                    <div className={`board-tab ${viewType === 'presentation' ? 'active' : ''}`} onClick={() => setViewType('presentation')}>Presentation 🖥️</div>
-                  </div>
+                  <nav className="board-tabs" role="tablist" aria-label="Board view options">
+                    <button type="button" role="tab" aria-selected={viewType === 'table'} className={`board-tab ${viewType === 'table' ? 'active' : ''}`} onClick={() => setViewType('table')}>Main table</button>
+                    <button type="button" role="tab" aria-selected={viewType === 'kanban'} className={`board-tab ${viewType === 'kanban' ? 'active' : ''}`} onClick={() => setViewType('kanban')}>Kanban</button>
+                    <button type="button" role="tab" aria-selected={viewType === 'gantt'} className={`board-tab ${viewType === 'gantt' ? 'active' : ''}`} onClick={() => setViewType('gantt')}>Timeline</button>
+                    <button type="button" role="tab" aria-selected={viewType === 'form'} className={`board-tab ${viewType === 'form' ? 'active' : ''}`} onClick={() => setViewType('form')}>Form</button>
+                    <button type="button" role="tab" aria-selected={viewType === 'presentation'} className={`board-tab ${viewType === 'presentation' ? 'active' : ''}`} onClick={() => setViewType('presentation')}>Presentation 🖥️</button>
+                  </nav>
                 )}
               </div>
 
               {/* Board Toolbar */}
               {activeBoard.type === 'grid' && (
-                <div className="board-toolbar">
-                  <button className="btn-primary" onClick={() => {
+                <div className="board-toolbar" role="toolbar" aria-label="Board actions">
+                  <button type="button" className="btn-primary" aria-label="เพิ่มรายการงานใหม่ (New Item)" onClick={() => {
                     const firstGroup = activeBoard.groups[0];
                     if (firstGroup) handleAddItem(firstGroup.id, 'New Item');
                   }}>
-                    New Item <FiArrowDown style={{ marginLeft: '4px' }} />
+                    New Item <FiArrowDown style={{ marginLeft: '4px' }} aria-hidden="true" />
                   </button>
-                  <button className="toolbar-btn"><FiSearch /> Search</button>
-                  <button className="toolbar-btn"><FiUsers /> Person</button>
-                  <button className="toolbar-btn"><FiFilter /> Filter</button>
-                  <button className="toolbar-btn"><FiArrowDown /> Sort</button>
-                  <button className="toolbar-btn"><FiEyeOff /> Hide</button>
-                  <button className="toolbar-btn" onClick={handleExportExcel} style={{ color: '#00c875', borderColor: 'rgba(0, 200, 117, 0.4)' }}>📊 Export Excel</button>
-                  <button className="toolbar-btn" onClick={() => fileInputRef.current?.click()} style={{ color: '#579bfc', borderColor: 'rgba(87, 155, 252, 0.4)' }}>
-                    <FiUpload style={{ marginRight: '4px' }} /> Import Excel / CSV
+                  <button type="button" className="toolbar-btn" aria-label="ค้นหารายการ"><FiSearch aria-hidden="true" /> Search</button>
+                  <button type="button" className="toolbar-btn" aria-label="กรองตามผู้รับผิดชอบ"><FiUsers aria-hidden="true" /> Person</button>
+                  <button type="button" className="toolbar-btn" aria-label="ตัวกรองเงื่อนไข"><FiFilter aria-hidden="true" /> Filter</button>
+                  <button type="button" className="toolbar-btn" aria-label="จัดเรียงลำดับ"><FiArrowDown aria-hidden="true" /> Sort</button>
+                  <button type="button" className="toolbar-btn" aria-label="ซ่อนคอลัมน์"><FiEyeOff aria-hidden="true" /> Hide</button>
+                  <button type="button" className="toolbar-btn" onClick={handleExportExcel} aria-label="ส่งออก Excel" style={{ color: '#00c875', borderColor: 'rgba(0, 200, 117, 0.4)' }}>📊 Export Excel</button>
+                  <button type="button" className="toolbar-btn" onClick={() => fileInputRef.current?.click()} aria-label="นำเข้าไฟล์ Excel หรือ CSV" style={{ color: '#579bfc', borderColor: 'rgba(87, 155, 252, 0.4)' }}>
+                    <FiUpload style={{ marginRight: '4px' }} aria-hidden="true" /> Import Excel / CSV
                   </button>
-                  <input type="file" ref={fileInputRef} accept=".csv" onChange={handleImportFileChange} style={{ display: 'none' }} />
-                  <button className="toolbar-btn"><FiMoreHorizontal /></button>
+                  <input type="file" ref={fileInputRef} accept=".csv" onChange={handleImportFileChange} style={{ display: 'none' }} aria-label="เลือกไฟล์ CSV สำหรับนำเข้า" />
+                  <button type="button" className="toolbar-btn" aria-label="ตัวเลือกเพิ่มเติม"><FiMoreHorizontal aria-hidden="true" /></button>
                 </div>
               )}
 
@@ -1029,7 +1046,7 @@ const App = () => {
               Select a board to view
             </div>
           )}
-        </div>
+        </main>
       </div>
 
       <TaskDrawer 

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiX, FiMessageCircle, FiAlignLeft, FiSend } from 'react-icons/fi';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -12,6 +12,14 @@ const TaskDrawer = ({ isOpen, onClose, task, onUpdate }) => {
       setDescription(task.description || '');
     }
   }, [task]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !task) return null;
 
@@ -48,23 +56,29 @@ const TaskDrawer = ({ isOpen, onClose, task, onUpdate }) => {
       />
       
       {/* Drawer */}
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        right: 0,
-        bottom: 0,
-        width: '450px',
-        maxWidth: '100vw',
-        background: 'rgba(29, 30, 47, 0.85)',
-        backdropFilter: 'blur(30px)',
-        WebkitBackdropFilter: 'blur(30px)',
-        borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
-        boxShadow: '-10px 0 30px rgba(0,0,0,0.5)',
-        zIndex: 1000,
-        display: 'flex',
-        flexDirection: 'column',
-        animation: 'slideInRight 0.3s ease-out'
-      }}>
+      <aside 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="drawer-task-title"
+        className="task-drawer"
+        style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: '450px',
+          maxWidth: '100vw',
+          background: 'rgba(29, 30, 47, 0.85)',
+          backdropFilter: 'blur(30px)',
+          WebkitBackdropFilter: 'blur(30px)',
+          borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '-10px 0 30px rgba(0,0,0,0.5)',
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          animation: 'slideInRight 0.3s ease-out'
+        }}
+      >
         {/* Header */}
         <div style={{ 
           padding: '1.5rem', 
@@ -74,11 +88,14 @@ const TaskDrawer = ({ isOpen, onClose, task, onUpdate }) => {
           alignItems: 'flex-start'
         }}>
           <div>
-            <h2 style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', color: 'var(--text-main)', lineHeight: '1.3' }}>
+            <h2 id="drawer-task-title" style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', color: 'var(--text-main)', lineHeight: '1.3' }}>
               {task.title}
             </h2>
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div role="tablist" style={{ display: 'flex', gap: '1rem' }}>
               <button 
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'updates'}
                 onClick={() => setActiveTab('updates')}
                 style={{
                   background: 'transparent', border: 'none', 
@@ -88,9 +105,12 @@ const TaskDrawer = ({ isOpen, onClose, task, onUpdate }) => {
                   display: 'flex', alignItems: 'center', gap: '0.5rem'
                 }}
               >
-                <FiMessageCircle /> Updates ({(task.updates || []).length})
+                <FiMessageCircle aria-hidden="true" /> Updates ({(task.updates || []).length})
               </button>
               <button 
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'description'}
                 onClick={() => setActiveTab('description')}
                 style={{
                   background: 'transparent', border: 'none', 
@@ -100,18 +120,21 @@ const TaskDrawer = ({ isOpen, onClose, task, onUpdate }) => {
                   display: 'flex', alignItems: 'center', gap: '0.5rem'
                 }}
               >
-                <FiAlignLeft /> Description
+                <FiAlignLeft aria-hidden="true" /> Description
               </button>
             </div>
           </div>
           <button 
+            type="button"
             onClick={onClose}
+            aria-label="ปิดหน้ารายละเอียดงาน (Close)"
+            className="icon-btn"
             style={{ 
               background: 'transparent', border: 'none', color: 'var(--text-muted)', 
               cursor: 'pointer', padding: '0.5rem' 
             }}
           >
-            <FiX size={24} />
+            <FiX size={24} aria-hidden="true" />
           </button>
         </div>
 
@@ -207,7 +230,7 @@ const TaskDrawer = ({ isOpen, onClose, task, onUpdate }) => {
           )}
         </div>
 
-      </div>
+      </aside>
 
       <style>{`
         @keyframes slideInRight {
