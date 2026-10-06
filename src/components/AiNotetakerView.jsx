@@ -58,9 +58,9 @@ const AiNotetakerView = ({ boards, onAddTask }) => {
   };
 
   return (
-    <div style={{ padding: '2rem 3rem', color: 'var(--text-main)', height: '100%', overflowY: 'auto' }}>
+    <div className="view-responsive-padding" style={{ color: 'var(--text-main)', height: '100%', overflowY: 'auto' }}>
       <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
           <span style={{ color: '#00c875' }}><FiVideo size={28} /></span>
           <span>AI Meeting Notetaker & Task Extractor</span>
         </h1>
@@ -69,7 +69,7 @@ const AiNotetakerView = ({ boards, onAddTask }) => {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem' }}>
+      <div className="ai-notetaker-grid">
         {/* Left: Meeting Notes Editor */}
         <div style={{ background: '#20243f', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>

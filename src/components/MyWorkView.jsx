@@ -44,7 +44,7 @@ const MyWorkView = ({ boards, onSelectBoard, onOpenItem, updateItem }) => {
   ];
 
   return (
-    <div style={{ padding: '2rem 3rem', color: 'var(--text-main)', height: '100%', overflowY: 'auto' }}>
+    <div className="view-responsive-padding" style={{ color: 'var(--text-main)', height: '100%', overflowY: 'auto' }}>
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <span>📋 My Work</span>

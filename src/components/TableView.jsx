@@ -376,7 +376,7 @@ const TableView = ({
   };
 
   return (
-    <div className="board-container" ref={tableContainerRef}>
+    <div className="table-view-container" ref={tableContainerRef}>
       {groups.map((group) => (
         <div key={group.id} className="group-section">
           

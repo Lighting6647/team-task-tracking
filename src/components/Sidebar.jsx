@@ -1,10 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiGrid, FiFolder, FiSearch, FiMoreHorizontal, FiPlus, FiLayout, FiChevronDown, FiChevronRight, FiFileText, FiEdit2, FiTrash2 , FiHome, FiCheckSquare, FiVideo, FiStar} from 'react-icons/fi';
+import { FiGrid, FiFolder, FiSearch, FiMoreHorizontal, FiPlus, FiLayout, FiChevronDown, FiChevronRight, FiFileText, FiEdit2, FiTrash2 , FiHome, FiCheckSquare, FiVideo, FiStar, FiX } from 'react-icons/fi';
 
 const Sidebar = ({ 
   boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoard, onRenameBoard, onMoveBoard,
-  activeSpecialView, onSelectSpecialView, onResetToBlank
+  activeSpecialView, onSelectSpecialView, onResetToBlank,
+  isOpen = true, onClose
 }) => {
+  const handleNavigate = (action) => {
+    if (typeof action === 'function') action();
+    if (onClose && typeof window !== 'undefined' && window.innerWidth <= 1024) {
+      onClose();
+    }
+  };
   const [hoveredId, setHoveredId] = useState(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [addMenuParentId, setAddMenuParentId] = useState(null);
@@ -42,6 +49,16 @@ const Sidebar = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isSearching, searchQuery]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen && onClose) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   const handleDelete = (id, e) => {
     e.stopPropagation();
@@ -186,7 +203,7 @@ const Sidebar = ({
           onDragLeave={(e) => handleDragLeave(e, board)}
           onDrop={(e) => handleDrop(e, board)}
           className={`sidebar-menu-item ${!activeSpecialView && board.id === activeBoardId ? 'active' : ''} ${dragOverId === board.id ? 'drag-over' : ''}`}
-          onClick={() => isFolder ? toggleFolder({stopPropagation: () => {}}, board.id) : onSelectBoard(board.id)}
+          onClick={() => isFolder ? toggleFolder({stopPropagation: () => {}}, board.id) : handleNavigate(() => onSelectBoard(board.id))}
           onMouseEnter={() => setHoveredId(board.id)}
           onMouseLeave={() => setHoveredId(null)}
           style={{ 
@@ -271,15 +288,36 @@ const Sidebar = ({
     .filter(b => !b.parentId || !boards.some(p => p.id === b.parentId));
 
   return (
-    <div className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'open' : ''}`} aria-label="Main Navigation">
+      {/* Sidebar Brand Header with Mobile Close Button */}
+      <div className="sidebar-brand-header">
+        <div className="sidebar-brand-badge">
+          <span style={{ fontSize: '1.15rem' }}>⚡</span>
+          <span>LightBeam OS</span>
+        </div>
+        {onClose && (
+          <button 
+            type="button"
+            className="sidebar-close-btn" 
+            onClick={onClose}
+            aria-label="Close menu"
+            title="ปิดเมนู"
+          >
+            <FiX size={20} />
+          </button>
+        )}
+      </div>
+
       {/* Top Navigation Items */}
       <div style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         <div 
           className={`sidebar-menu-item ${!activeSpecialView && activeBoardId === 'board-passapp-1' ? 'active' : ''}`}
           onClick={() => {
-            onSelectSpecialView && onSelectSpecialView(null);
-            const firstGrid = boards.find(b => b.type === 'grid');
-            if (firstGrid) onSelectBoard(firstGrid.id);
+            handleNavigate(() => {
+              onSelectSpecialView && onSelectSpecialView(null);
+              const firstGrid = boards.find(b => b.type === 'grid');
+              if (firstGrid) onSelectBoard(firstGrid.id);
+            });
           }}
           style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
         >
@@ -288,7 +326,11 @@ const Sidebar = ({
 
         <div 
           className={`sidebar-menu-item ${activeSpecialView === 'my-work' ? 'active' : ''}`}
-          onClick={() => onSelectSpecialView && onSelectSpecialView('my-work')}
+          onClick={() => {
+            handleNavigate(() => {
+              onSelectSpecialView && onSelectSpecialView('my-work');
+            });
+          }}
           style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
         >
           <FiCheckSquare size={18} /> My work
@@ -296,7 +338,11 @@ const Sidebar = ({
 
         <div 
           className={`sidebar-menu-item ${activeSpecialView === 'ai-notetaker' ? 'active' : ''}`}
-          onClick={() => onSelectSpecialView && onSelectSpecialView('ai-notetaker')}
+          onClick={() => {
+            handleNavigate(() => {
+              onSelectSpecialView && onSelectSpecialView('ai-notetaker');
+            });
+          }}
           style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
         >
           <FiVideo size={18} /> AI Notetaker
@@ -332,11 +378,13 @@ const Sidebar = ({
               <div 
                 className="add-menu-item"
                 onClick={() => {
-                  const dashboardBoard = boards.find(b => b.type === 'dashboard');
-                  if (dashboardBoard) {
-                    onSelectSpecialView && onSelectSpecialView(null);
-                    onSelectBoard(dashboardBoard.id);
-                  }
+                  handleNavigate(() => {
+                    const dashboardBoard = boards.find(b => b.type === 'dashboard');
+                    if (dashboardBoard) {
+                      onSelectSpecialView && onSelectSpecialView(null);
+                      onSelectBoard(dashboardBoard.id);
+                    }
+                  });
                   setShowMoreMenu(false);
                 }}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', cursor: 'pointer' }}
@@ -453,7 +501,7 @@ const Sidebar = ({
             <div 
               key={board.id} 
               className={`sidebar-menu-item ${board.id === activeBoardId ? 'active' : ''}`}
-              onClick={() => onSelectBoard(board.id)}
+              onClick={() => handleNavigate(() => onSelectBoard(board.id))}
               style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', paddingLeft: '1rem' }}
             >
               {renderIcon(board.type, board.color || 'var(--accent-blue)')}
@@ -464,7 +512,7 @@ const Sidebar = ({
           rootItems.map(board => renderItem(board))
         )}
       </div>
-    </div>
+    </aside>
   );
 }
 

@@ -224,6 +224,9 @@ const App = () => {
   const [theme, setTheme] = useState('dark');
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [automationsOpen, setAutomationsOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(
+    typeof window !== 'undefined' ? window.innerWidth > 1024 : false
+  );
   const fileInputRef = React.useRef(null);
 
   useEffect(() => {
@@ -781,10 +784,57 @@ const App = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: 'var(--bg-main)' }}>
-      <div className="app-container" style={{ flex: 1, display: 'flex', overflow: 'hidden', height: '100vh' }}>
+      {/* Mobile & Tablet App Bar (Visible on screens <= 1024px: iPhone, iPad, smartphone) */}
+      <header className="mobile-top-bar">
+        <div className="mobile-top-bar-left">
+          <button 
+            type="button"
+            className="mobile-hamburger-btn" 
+            onClick={() => setIsSidebarOpen(true)}
+            aria-label="Open navigation menu"
+            title="เปิดเมนูนำทาง (Sidebar)"
+          >
+            <FiMenu size={22} />
+          </button>
+          <div className="mobile-app-branding">
+            <span className="mobile-app-name">LightBeam OS</span>
+            <span className="mobile-view-name">
+              {activeSpecialView === 'my-work' 
+                ? '📋 My Work' 
+                : activeSpecialView === 'ai-notetaker' 
+                  ? '🎙️ AI Notetaker' 
+                  : (activeBoard?.title || 'บอร์ดงาน')}
+            </span>
+          </div>
+        </div>
+        <div className="mobile-top-bar-right">
+          <NotificationCenter boards={boards} />
+          <button 
+            type="button"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
+            className="mobile-theme-btn"
+            title={theme === 'dark' ? 'สลับเป็น Light Mode' : 'สลับเป็น Dark Mode'}
+          >
+            {theme === 'dark' ? <FiSun color="#fdab3d" size={17} /> : <FiMoon color="#579bfc" size={17} />}
+          </button>
+        </div>
+      </header>
+
+      <div className="app-container" style={{ flex: 1, display: 'flex', overflow: 'hidden', height: '100vh', position: 'relative' }}>
+        {/* Backdrop overlay for mobile & tablet drawer */}
+        {isSidebarOpen && (
+          <div 
+            className="sidebar-backdrop" 
+            onClick={() => setIsSidebarOpen(false)} 
+            aria-label="Close menu backdrop"
+          />
+        )}
+
         <Sidebar 
           boards={boards}
           activeBoardId={activeBoardId}
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
           onSelectBoard={(id) => {
             setActiveSpecialView(null);
             setActiveBoardId(id);
@@ -817,7 +867,7 @@ const App = () => {
           }}
         />
         
-        <div className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)', borderTopLeftRadius: '8px', borderLeft: '1px solid var(--border-color)', borderTop: '1px solid var(--border-color)', marginTop: '0.5rem', overflow: 'hidden' }}>
+        <div className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)', overflow: 'hidden' }}>
           {activeSpecialView === 'my-work' ? (
             <MyWorkView 
               boards={boards}
@@ -841,38 +891,52 @@ const App = () => {
               {/* Board Header */}
               <div className="board-header">
                 <div className="board-title-row">
-                  <div className="board-title">
-                    <input 
-                      type="text" 
-                      value={activeBoard.title}
-                      onChange={(e) => handleUpdateBoardTitle(e.target.value)}
-                      className="inline-input"
-                      style={{ fontSize: '1.75rem', fontWeight: 600, width: '300px' }}
-                    />
+                  <div className="board-title-left" style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flex: 1, minWidth: 0 }}>
+                    <button 
+                      type="button"
+                      className="header-hamburger-btn" 
+                      onClick={() => setIsSidebarOpen(prev => !prev)}
+                      aria-label="Toggle navigation menu"
+                      title="เปิด/ปิด แถบเมนูด้านข้าง"
+                    >
+                      <FiMenu size={20} />
+                    </button>
+                    <div className="board-title" style={{ flex: 1, minWidth: 0 }}>
+                      <input 
+                        type="text" 
+                        value={activeBoard.title}
+                        onChange={(e) => handleUpdateBoardTitle(e.target.value)}
+                        className="inline-input board-title-input"
+                      />
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', alignItems: 'center' }}>
+                  <div className="board-header-actions">
                     <NotificationCenter boards={boards} />
                     <button 
+                      type="button"
                       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
-                      style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-muted)', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem' }}
+                      className="theme-toggle-btn"
                       title="สลับธีม สว่าง / มืด"
                     >
                       {theme === 'dark' ? <FiSun color="#fdab3d" size={14} /> : <FiMoon color="#579bfc" size={14} />}
-                      {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                      <span className="theme-toggle-label">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
                     </button>
                     <div 
                       onClick={() => setIntegrationsOpen(true)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: integrationsOpen ? '#579bfc' : 'inherit' }}
+                      className="header-action-badge"
                       title="เปิดศูนย์เชื่อมต่อระบบภายนอก (Integrations)"
                     >
-                      <FiSettings /> Integrate
+                      <FiSettings size={14} />
+                      <span className="action-badge-label">Integrate</span>
                     </div>
                     <div 
                       onClick={() => setAutomationsOpen(true)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: automationsOpen ? '#a259ff' : 'inherit' }}
+                      className="header-action-badge"
+                      style={{ color: automationsOpen ? '#a259ff' : 'inherit' }}
                       title="เปิดศูนย์ทำงานอัตโนมัติ (Automations)"
                     >
-                      <FiSettings /> Automate
+                      <FiSettings size={14} color="#a259ff" />
+                      <span className="action-badge-label">Automate</span>
                     </div>
                   </div>
                 </div>
@@ -913,7 +977,7 @@ const App = () => {
               )}
 
               {/* View Content */}
-              <div className="board-container" style={{ padding: '0 2rem 2rem 2rem' }}>
+              <div className="board-container">
                 {activeBoard.type === 'grid' && viewType === 'table' && (
                   <TableView 
                     board={activeBoard} 
