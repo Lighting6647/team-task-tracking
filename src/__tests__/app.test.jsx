@@ -270,4 +270,71 @@ describe('LightBeam OS - Complete Feature & Navigation Tests', () => {
     expect(screen.getByText(/สถานะงานในโปรเจกต์/i)).toBeDefined();
     expect(screen.getByText(/AI Widget Creator/i)).toBeDefined();
   });
+
+  it('tests Form View submission adds new item into the board', () => {
+    render(<App />);
+
+    // Switch to Form tab
+    const formTab = screen.getByRole('tab', { name: /Form/i });
+    fireEvent.click(formTab);
+
+    // Fill form input
+    const nameInput = screen.getByPlaceholderText(/Enter item name/i);
+    fireEvent.change(nameInput, { target: { value: 'Feature Request: OAuth 2.0' } });
+
+    // Submit form
+    const submitBtn = screen.getByRole('button', { name: /Submit/i });
+    fireEvent.click(submitBtn);
+
+    // Confirmation message shown
+    expect(screen.getByText(/Thank you!/i)).toBeDefined();
+    expect(screen.getByText(/Your response has been submitted successfully/i)).toBeDefined();
+
+    // Switch back to Main table
+    const tableTab = screen.getByRole('tab', { name: /Main table/i });
+    fireEvent.click(tableTab);
+
+    // Verify item is in table
+    expect(screen.getByDisplayValue('Feature Request: OAuth 2.0')).toBeDefined();
+  });
+
+  it('tests AI Notetaker task extraction and batch import to board', () => {
+    render(<App />);
+
+    // Navigate to AI Notetaker
+    const notetakerMenu = screen.getByText('AI Notetaker');
+    fireEvent.click(notetakerMenu);
+
+    // Click Extract Action Items
+    const extractBtn = screen.getByText(/สกัด Action Items ด้วย AI/i);
+    fireEvent.click(extractBtn);
+
+    // Click Import All to Board
+    const importAllBtn = screen.getByText(/นำเข้าสู่บอร์ด/i);
+    fireEvent.click(importAllBtn);
+
+    // Verify success banner
+    expect(screen.getByText(/บันทึกเข้าบอร์ดแล้ว/i)).toBeDefined();
+  });
+
+  it('tests My Work status filtering', () => {
+    render(<App />);
+
+    // Navigate to My Work
+    const myWorkMenu = screen.getByText('My work');
+    fireEvent.click(myWorkMenu);
+
+    // Click "กำลังทำ" filter button
+    const workingFilterBtn = screen.getByRole('button', { name: 'กำลังทำ' });
+    fireEvent.click(workingFilterBtn);
+
+    // Click "เสร็จสิ้น" filter button
+    const doneFilterBtn = screen.getByRole('button', { name: 'เสร็จสิ้น' });
+    fireEvent.click(doneFilterBtn);
+
+    // Click "ทั้งหมด" filter button
+    const allFilterBtn = screen.getByRole('button', { name: 'ทั้งหมด' });
+    fireEvent.click(allFilterBtn);
+    expect(screen.getAllByText(/Pass App ›/i).length).toBeGreaterThan(0);
+  });
 });

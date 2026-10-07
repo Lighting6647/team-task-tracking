@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiVideo, FiCpu, FiCheckSquare, FiPlus, FiArrowRight, FiFileText } from 'react-icons/fi';
+import { FiVideo, FiCpu, FiCheckSquare, FiFileText } from 'react-icons/fi';
 
 const AiNotetakerView = ({ boards, onAddTask }) => {
   const [notes, setNotes] = useState(
@@ -49,7 +49,7 @@ const AiNotetakerView = ({ boards, onAddTask }) => {
 
     extractedTasks.forEach(task => {
       if (onAddTask) {
-        onAddTask(targetGroupId, task.title);
+        onAddTask(targetGroupId, task.title, { department: task.department, status: task.status }, selectedBoardId);
       }
     });
 

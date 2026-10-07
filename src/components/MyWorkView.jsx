@@ -159,7 +159,7 @@ const MyWorkView = ({ boards, onSelectBoard, onOpenItem, updateItem }) => {
             >
               <div 
                 style={{ fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                onClick={() => onOpenItem && onOpenItem(task.groupId, task.id)}
+                onClick={() => onOpenItem && onOpenItem(task.groupId, task.id, task.boardId)}
                 title="คลิกเพื่อดูรายละเอียดงาน"
               >
                 <span>{task.title}</span>
@@ -174,7 +174,7 @@ const MyWorkView = ({ boards, onSelectBoard, onOpenItem, updateItem }) => {
                 <StatusDropdown
                   statusId={task.status}
                   statusOptions={STATUS_OPTIONS}
-                  onStatusChange={(newStatus) => updateItem && updateItem(task.groupId, task.id, 'status', newStatus)}
+                  onStatusChange={(newStatus) => updateItem && updateItem(task.groupId, task.id, 'status', newStatus, null, task.boardId)}
                 />
               </div>
 

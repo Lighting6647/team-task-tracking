@@ -716,59 +716,68 @@ const App = () => {
   };
 
   const getActiveTask = () => {
-    if (!activeItemContext || !activeBoard || activeBoard.type !== 'grid') return null;
-    const group = activeBoard.groups.find(g => g.id === activeItemContext.groupId);
+    if (!activeItemContext) return null;
+    const targetBoardId = activeItemContext.boardId || activeBoardId;
+    const targetBoard = boards.find(b => b.id === targetBoardId);
+    if (!targetBoard || targetBoard.type !== 'grid') return null;
+    const group = (targetBoard.groups || []).find(g => g.id === activeItemContext.groupId);
     if (!group) return null;
-    return group.items.find(i => i.id === activeItemContext.itemId);
+    return (group.items || []).find(i => i.id === activeItemContext.itemId);
   };
 
   const handleUpdateActiveTaskContext = (field, value) => {
     if (activeItemContext) {
-      handleUpdateItem(activeItemContext.groupId, activeItemContext.itemId, field, value);
+      handleUpdateItem(activeItemContext.groupId, activeItemContext.itemId, field, value, null, activeItemContext.boardId);
     }
   };
 
-  const handleUpdateItem = (groupId, itemId, field, value, parentId = null) => {
-    if (!activeBoard) return;
-    const newGroups = activeBoard.groups.map(g => {
-      if (g.id === groupId) {
-        return {
-          ...g,
-          items: g.items.map(item => {
-            if (parentId) {
-              if (item.id === parentId) {
-                return {
-                  ...item,
-                  subitems: (item.subitems || []).map(sub => 
-                    sub.id === itemId ? { ...sub, [field]: value } : sub
-                  )
-                };
+  const handleUpdateItem = (groupId, itemId, field, value, parentId = null, targetBoardId = null) => {
+    const bId = targetBoardId || activeBoardId;
+    setBoards(prevBoards => prevBoards.map(b => {
+      if (b.id !== bId || b.type !== 'grid') return b;
+      const newGroups = (b.groups || []).map(g => {
+        if (g.id === groupId) {
+          return {
+            ...g,
+            items: (g.items || []).map(item => {
+              if (parentId) {
+                if (item.id === parentId) {
+                  return {
+                    ...item,
+                    subitems: (item.subitems || []).map(sub => 
+                      sub.id === itemId ? { ...sub, [field]: value } : sub
+                    )
+                  };
+                }
+                return item;
+              } else {
+                return item.id === itemId ? { ...item, [field]: value } : item;
               }
-              return item;
-            } else {
-              return item.id === itemId ? { ...item, [field]: value } : item;
-            }
-          })
-        };
-      }
-      return g;
-    });
-    updateActiveBoardGroups(newGroups);
+            })
+          };
+        }
+        return g;
+      });
+      return { ...b, groups: newGroups };
+    }));
   };
 
-  const handleAddItem = (groupId, title) => {
-    if (!activeBoard) return null;
+  const handleAddItem = (groupId, title, extraFields = {}, targetBoardId = null) => {
+    const bId = targetBoardId || activeBoardId;
     const newItemId = uuidv4();
-    const newGroups = activeBoard.groups.map(g => {
-      if (g.id === groupId) {
-        return {
-          ...g,
-          items: [...g.items, { id: newItemId, title }]
-        };
-      }
-      return g;
-    });
-    updateActiveBoardGroups(newGroups);
+    setBoards(prevBoards => prevBoards.map(b => {
+      if (b.id !== bId || b.type !== 'grid') return b;
+      const newGroups = (b.groups || []).map(g => {
+        if (g.id === groupId) {
+          return {
+            ...g,
+            items: [...g.items, { id: newItemId, title, ...extraFields }]
+          };
+        }
+        return g;
+      });
+      return { ...b, groups: newGroups };
+    }));
     return newItemId;
   };
 
@@ -949,16 +958,16 @@ const App = () => {
                 setActiveSpecialView(null);
                 setActiveBoardId(id);
               }}
-              onOpenItem={(groupId, itemId) => {
+              onOpenItem={(groupId, itemId, boardId) => {
                 setTaskDrawerOpen(true);
-                setActiveItemContext({ groupId, itemId });
+                setActiveItemContext({ groupId, itemId, boardId });
               }}
               updateItem={handleUpdateItem}
             />
           ) : activeSpecialView === 'ai-notetaker' ? (
             <AiNotetakerView 
               boards={boards}
-              onAddTask={(groupId, title) => handleAddItem(groupId, title)}
+              onAddTask={(groupId, title, extraFields, boardId) => handleAddItem(groupId, title, extraFields, boardId)}
             />
           ) : activeBoard ? (
             <>

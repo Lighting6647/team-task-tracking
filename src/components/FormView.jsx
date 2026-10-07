@@ -12,16 +12,8 @@ const FormView = ({ board, addItem, updateItem }) => {
     
     const firstGroupId = board.groups[0]?.id;
     if (firstGroupId) {
-      const newItemId = addItem(firstGroupId, formData.title);
-      // Wait for React to process, then update the rest of the fields
-      setTimeout(() => {
-        const itemKeys = Object.keys(formData);
-        itemKeys.forEach(key => {
-          if (key !== 'title') {
-            updateItem(firstGroupId, newItemId, key, formData[key]);
-          }
-        });
-      }, 100);
+      const { title, ...rest } = formData;
+      addItem(firstGroupId, title, rest, board.id);
 
       setSubmitted(true);
       setTimeout(() => {
