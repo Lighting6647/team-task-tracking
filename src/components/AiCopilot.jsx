@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { FiMessageSquare, FiX, FiSend, FiZap, FiCheck, FiFileText, FiPlus } from 'react-icons/fi';
+import { FiX, FiSend, FiZap, FiFileText, FiPlus } from 'react-icons/fi';
 
-const AiCopilot = ({ activeBoard, boards, onAddItem, onAddDocument }) => {
+const AiCopilot = ({ activeBoard, onAddItem, onAddDocument }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -22,8 +22,8 @@ const AiCopilot = ({ activeBoard, boards, onAddItem, onAddDocument }) => {
     setIsTyping(true);
 
     setTimeout(() => {
-      let replyText = '';
-      const lower = textToSend.toLowerCase();
+      let actionType = null;
+      let actionData = null;
 
       if (lower.includes('สรุป') || lower.includes('ภาพรวม') || lower.includes('summary')) {
         const groupCount = activeBoard?.groups?.length || 0;
@@ -40,13 +40,24 @@ const AiCopilot = ({ activeBoard, boards, onAddItem, onAddDocument }) => {
         replyText = `📊 **สรุปภาพรวมบอร์ด "${activeBoard?.title || 'ปัจจุบัน'}"**:\n• มีกลุ่มงานทั้งหมด: ${groupCount} กลุ่ม\n• งานทั้งหมด: ${itemCount} รายการ\n• งานที่เสร็จสิ้นแล้ว: ${doneCount} รายการ (${itemCount ? Math.round((doneCount/itemCount)*100) : 0}%)\n\n💡 **ข้อแนะนำ:** ควรติดตามงานที่กำลังดำเนินการเพื่อให้เสร็จตามกำหนดส่ง`;
       } else if (lower.includes('ร่าง') || lower.includes('เอกสาร') || lower.includes('proposal') || lower.includes('doc')) {
         replyText = `✍️ **ผมร่างเอกสารตัวอย่างให้เรียบร้อยแล้วครับ:**\n\n📄 **ชื่อเอกสาร:** ข้อเสนอโครงการพัฒนาซอฟต์แวร์\n• วัตถุประสงค์: เพื่อเพิ่มประสิทธิภาพการทำงานร่วมกัน\n• ระยะเวลา: 4 สัปดาห์\n• งบประมาณ: 250,000 บาท\n\nกดปุ่มด้านล่างเพื่อสร้างเอกสารนี้เข้าสู่ Workspace ได้ทันทีครับ!`;
+        actionType = 'doc';
+        actionData = {
+          title: 'ข้อเสนอโครงการพัฒนาซอฟต์แวร์',
+          content: '<h1>ข้อเสนอโครงการพัฒนาซอฟต์แวร์</h1><p><strong>วัตถุประสงค์:</strong> เพื่อเพิ่มประสิทธิภาพการทำงานร่วมกัน</p><p><strong>ระยะเวลา:</strong> 4 สัปดาห์</p><p><strong>งบประมาณ:</strong> 250,000 บาท</p>'
+        };
       } else if (lower.includes('งาน') || lower.includes('task') || lower.includes('สร้าง')) {
         replyText = `📋 **สกัดรายการงานให้อัตโนมัติ:**\n1. ทดสอบระบบความปลอดภัย (Security Testing)\n2. จัดทำคู่มือการใช้งาน (User Manual)\n3. เตรียมความพร้อมสำหรับวัน Launch (Go-Live Preparation)\n\nกดปุ่มนำเข้าเพื่อเพิ่มงานทั้ง 3 รายการลงในกลุ่มงานแรกของบอร์ดนี้ครับ!`;
+        actionType = 'tasks';
+        actionData = [
+          'ทดสอบระบบความปลอดภัย (Security Testing)',
+          'จัดทำคู่มือการใช้งาน (User Manual)',
+          'เตรียมความพร้อมสำหรับวัน Launch (Go-Live Preparation)'
+        ];
       } else {
         replyText = `🤖 รับทราบครับ! ผมได้วิเคราะห์คำสั่ง "${textToSend}" เรียบร้อยแล้ว พร้อมช่วยคุณบริหารจัดการโปรเจกต์ "${activeBoard?.title || 'Main Workspace'}" อย่างมีประสิทธิภาพครับ`;
       }
 
-      setMessages([...newMsgs, { sender: 'ai', text: replyText }]);
+      setMessages([...newMsgs, { sender: 'ai', text: replyText, actionType, actionData }]);
       setIsTyping(false);
     }, 800);
   };
@@ -58,7 +69,6 @@ const AiCopilot = ({ activeBoard, boards, onAddItem, onAddDocument }) => {
         <button
           onClick={() => setIsOpen(true)}
           style={{
-            background: 'linear-[#0085ff], #6164ff',
             background: 'linear-gradient(135deg, #0085ff 0%, #a259ff 100%)',
             color: '#fff',
             border: 'none',
@@ -151,6 +161,54 @@ const AiCopilot = ({ activeBoard, boards, onAddItem, onAddDocument }) => {
                 }}
               >
                 {m.text}
+                {m.actionType === 'doc' && onAddDocument && (
+                  <button
+                    onClick={() => {
+                      onAddDocument(m.actionData.title, m.actionData.content);
+                      setMessages(prev => [...prev, { sender: 'ai', text: `✅ สร้างเอกสาร "${m.actionData.title}" ในบอร์ดเรียบร้อยแล้ว!` }]);
+                    }}
+                    style={{
+                      marginTop: '8px',
+                      background: '#00c875',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '6px 12px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <FiFileText size={14} /> สร้างเอกสารนี้ทันที
+                  </button>
+                )}
+                {m.actionType === 'tasks' && onAddItem && (
+                  <button
+                    onClick={() => {
+                      m.actionData.forEach(taskTitle => onAddItem(taskTitle));
+                      setMessages(prev => [...prev, { sender: 'ai', text: `✅ นำเข้างานทั้ง ${m.actionData.length} รายการลงในบอร์ดสำเร็จแล้ว!` }]);
+                    }}
+                    style={{
+                      marginTop: '8px',
+                      background: '#0085ff',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '6px 12px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <FiPlus size={14} /> นำเข้างานลงบอร์ดทันที
+                  </button>
+                )}
               </div>
             ))}
             {isTyping && (

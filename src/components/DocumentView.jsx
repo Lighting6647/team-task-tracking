@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiSave, FiFileText, FiCheck, FiRefreshCw, FiX, FiPrinter, FiFile, FiCopy, FiInfo, FiLayout, FiMaximize, FiEdit3, FiGrid, FiPlusCircle, FiList, FiCheckSquare } from 'react-icons/fi';
+import { FiSave, FiCheck, FiRefreshCw, FiX, FiPrinter, FiGrid, FiPlusCircle } from 'react-icons/fi';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
@@ -54,7 +54,6 @@ const TEMPLATES = [
 const DocumentView = ({ board, updateDocument, onClose }) => {
   const [content, setContent] = useState(board.content || '');
   const [saveStatus, setSaveStatus] = useState('');
-  const [showTemplates, setShowTemplates] = useState(false);
   const [activeTab, setActiveTab] = useState('home'); // 'file' | 'home' | 'insert' | 'layout' | 'review'
   const [viewMode, setViewMode] = useState('a4'); // 'a4' | 'full'
   const timeoutRef = useRef(null);
@@ -65,7 +64,7 @@ const DocumentView = ({ board, updateDocument, onClose }) => {
   useEffect(() => {
     setContent(board.content || '');
     isFirstRender.current = true;
-  }, [board.id]);
+  }, [board.id, board.content]);
 
   // Auto-save logic
   useEffect(() => {
@@ -82,7 +81,9 @@ const DocumentView = ({ board, updateDocument, onClose }) => {
     
     timeoutRef.current = setTimeout(() => {
       try {
-        updateDocument(board.id, content);
+        if (typeof updateDocument === 'function') {
+          updateDocument(board.id, content);
+        }
         setSaveStatus('Saved!');
         setTimeout(() => setSaveStatus(''), 2000);
       } catch (error) {
@@ -92,7 +93,7 @@ const DocumentView = ({ board, updateDocument, onClose }) => {
     }, 1500); // Debounce 1.5s
     
     return () => clearTimeout(timeoutRef.current);
-  }, [content, board.id]);
+  }, [content, board.id, updateDocument]);
 
   const handleManualSave = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -139,7 +140,6 @@ const DocumentView = ({ board, updateDocument, onClose }) => {
       }
     }
     setContent(tplContent);
-    setShowTemplates(false);
   };
 
   const insertSnippet = (htmlSnippet) => {

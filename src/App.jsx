@@ -1,5 +1,8 @@
-import { FiBell, FiInbox, FiUserPlus, FiMoreHorizontal, FiSearch, FiFilter, FiArrowDown, FiEyeOff, FiUsers, FiGrid, FiHelpCircle, FiSettings, FiMenu } from 'react-icons/fi';
-import React, { useState, useEffect } from 'react';
+import { 
+  FiMoreHorizontal, FiSearch, FiFilter, FiArrowDown, FiEyeOff, FiUsers, 
+  FiSettings, FiMenu, FiSun, FiMoon, FiUpload, FiX, FiCopy, FiPrinter, FiLayers, FiPlus 
+} from 'react-icons/fi';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Sidebar from './components/Sidebar';
 import TableView from './components/TableView';
@@ -9,13 +12,11 @@ import DocumentView from './components/DocumentView';
 import GanttView from './components/GanttView';
 import FormView from './components/FormView';
 import TaskDrawer from './components/TaskDrawer';
-import TopActions from './components/TopActions';
 import MyWorkView from './components/MyWorkView';
 import AiNotetakerView from './components/AiNotetakerView';
 import PresentationView from './components/PresentationView';
 import AiCopilot from './components/AiCopilot';
 import NotificationCenter from './components/NotificationCenter';
-import { FiSun, FiMoon, FiUpload } from 'react-icons/fi';
 import IntegrationsModal from './components/IntegrationsModal';
 import AutomationsModal from './components/AutomationsModal';
 import './index.css';
@@ -209,18 +210,16 @@ const App = () => {
           }
           return b;
         });
-      } catch (e) {
-        return INITIAL_BOARDS;
+      } catch (_e) {
+        return JSON.parse(JSON.stringify(INITIAL_BOARDS));
       }
     }
-    return INITIAL_BOARDS;
+    return JSON.parse(JSON.stringify(INITIAL_BOARDS));
   });
 
   const [activeBoardId, setActiveBoardId] = useState('board-passapp-1');
   const [activeSpecialView, setActiveSpecialView] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState({});
-  const [isGroupedByStatus, setIsGroupedByStatus] = useState(false);
   const [theme, setTheme] = useState('dark');
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [automationsOpen, setAutomationsOpen] = useState(false);
@@ -324,16 +323,45 @@ const App = () => {
 
 
   // View States for Top Actions
-  const [viewType, setViewType] = useState('table'); // 'table' or 'kanban'
+  const [viewType, setViewType] = useState('table'); // 'table' | 'kanban' | 'gantt' | 'form' | 'presentation'
   const [activeItemContext, setActiveItemContext] = useState(null); // { groupId, itemId }
   const [taskDrawerOpen, setTaskDrawerOpen] = useState(false);
   
+  const [personFilter, setPersonFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [sortConfig, setSortConfig] = useState(null);
   const [hiddenColumns, setHiddenColumns] = useState([]);
   const [groupBy, setGroupBy] = useState('default');
+  const [activeToolbarPopover, setActiveToolbarPopover] = useState(null); // 'person' | 'filter' | 'sort' | 'hide' | 'more'
+  const [isSearchingToolbar, setIsSearchingToolbar] = useState(false);
+  const toolbarRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(e.target)) {
+        setActiveToolbarPopover(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const activeBoard = boards.find(b => b.id === activeBoardId);
+
+  const uniquePersons = useMemo(() => {
+    if (!activeBoard || activeBoard.type !== 'grid') return [];
+    const set = new Set();
+    (activeBoard.groups || []).forEach(g => {
+      (g.items || []).forEach(item => {
+        if (item.owner) set.add(item.owner);
+        if (item.person) set.add(item.person);
+      });
+    });
+    if (set.size === 0) {
+      return ['Somchai (Admin)', 'Dev Team', 'Design Team'];
+    }
+    return Array.from(set);
+  }, [activeBoard]);
 
   // Data Transformation
   const getProcessedGroups = () => {
@@ -342,15 +370,28 @@ const App = () => {
     let processedGroups = JSON.parse(JSON.stringify(activeBoard.groups));
 
     // 1. Filter by Search Query
-    if (searchQuery) {
-      const lowerQuery = searchQuery.toLowerCase();
+    if (searchQuery.trim()) {
+      const lowerQuery = searchQuery.toLowerCase().trim();
       processedGroups = processedGroups.map(g => ({
         ...g,
-        items: g.items.filter(item => item.title.toLowerCase().includes(lowerQuery))
+        items: g.items.filter(item => 
+          (item.title && item.title.toLowerCase().includes(lowerQuery)) ||
+          (item.owner && item.owner.toLowerCase().includes(lowerQuery)) ||
+          (item.person && item.person.toLowerCase().includes(lowerQuery)) ||
+          (item.department && item.department.toLowerCase().includes(lowerQuery))
+        )
       }));
     }
 
-    // 2. Filter by Status
+    // 2. Filter by Person
+    if (personFilter) {
+      processedGroups = processedGroups.map(g => ({
+        ...g,
+        items: g.items.filter(item => item.owner === personFilter || item.person === personFilter)
+      }));
+    }
+
+    // 3. Filter by Status
     if (statusFilter !== '') {
       processedGroups = processedGroups.map(g => ({
         ...g,
@@ -358,21 +399,19 @@ const App = () => {
       }));
     }
 
-    // 3. Sort Items within groups
+    // 4. Sort Items within groups
     if (sortConfig) {
       processedGroups = processedGroups.map(g => ({
         ...g,
         items: g.items.sort((a, b) => {
-          // Handle dates and specific objects
           const valA = a[sortConfig.key];
           const valB = b[sortConfig.key];
 
-          // Safely extract string/number for comparison
           const normalize = (v) => {
             if (v === undefined || v === null) return '';
             if (typeof v === 'boolean') return v ? 1 : 0;
             if (typeof v === 'object') {
-              if (v.start) return new Date(v.start).getTime(); // Timeline
+              if (v.start) return new Date(v.start).getTime();
               return '';
             }
             return v;
@@ -398,10 +437,10 @@ const App = () => {
       }));
     }
 
-    // 4. Group By Status
+    // 5. Group By Status
     if (groupBy === 'status') {
       const allItems = processedGroups.flatMap(g => g.items);
-      const statusCol = activeBoard.columns?.find(c => c.id === 'status');
+      const statusCol = activeBoard.columns?.find(c => c.type === 'status');
       const currentStatusOptions = statusCol ? statusCol.options : INITIAL_STATUS_OPTIONS;
       const statusGroupsMap = {};
       
@@ -411,7 +450,7 @@ const App = () => {
           title: opt.label || 'Empty Status',
           color: opt.color,
           items: [],
-          isVirtual: true // Mark as virtual so we can disable rename/delete
+          isVirtual: true
         };
       });
 
@@ -422,15 +461,32 @@ const App = () => {
         }
       });
 
-      // Only return groups that actually have items to keep it clean, plus empty one if all are empty?
-      // Actually, Monday shows all groups if you group by status, but filtering out empty ones is cleaner
       processedGroups = Object.values(statusGroupsMap).filter(g => g.items.length > 0);
     }
 
     return processedGroups;
   };
 
-  const processedGroups = getProcessedGroups();
+  const handleDuplicateBoard = (boardId) => {
+    const srcBoard = boards.find(b => b.id === boardId);
+    if (!srcBoard) return;
+    const duplicatedBoard = JSON.parse(JSON.stringify(srcBoard));
+    duplicatedBoard.id = uuidv4();
+    duplicatedBoard.title = `${srcBoard.title} (คัดลอก)`;
+    if (duplicatedBoard.groups) {
+      duplicatedBoard.groups = duplicatedBoard.groups.map(g => ({
+        ...g,
+        id: uuidv4(),
+        items: (g.items || []).map(item => ({
+          ...item,
+          id: uuidv4(),
+          subitems: (item.subitems || []).map(s => ({ ...s, id: uuidv4() }))
+        }))
+      }));
+    }
+    setBoards(prev => [...prev, duplicatedBoard]);
+    setActiveBoardId(duplicatedBoard.id);
+  };
 
   // Board Actions
   const handleAddBoard = (type = 'grid', parentId = null) => {
@@ -862,6 +918,7 @@ const App = () => {
           onDeleteBoard={handleDeleteBoard}
           onRenameBoard={handleRenameBoard}
           onMoveBoard={handleMoveBoard}
+          onDuplicateBoard={handleDuplicateBoard}
           onResetToBlank={() => {
             const blankBoard = {
               id: 'board-1',
@@ -930,7 +987,7 @@ const App = () => {
                   <div className="board-header-actions">
                     <NotificationCenter boards={boards} />
                     <button 
-                      type="button"
+                      type="button" 
                       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
                       className="theme-toggle-btn"
                       title="สลับธีม สว่าง / มืด"
@@ -970,26 +1027,213 @@ const App = () => {
                 )}
               </div>
 
-              {/* Board Toolbar */}
+              {/* Board Toolbar with Complete Interactive Functions */}
               {activeBoard.type === 'grid' && (
-                <div className="board-toolbar" role="toolbar" aria-label="Board actions">
+                <div className="board-toolbar" role="toolbar" aria-label="Board actions" ref={toolbarRef}>
                   <button type="button" className="btn-primary" aria-label="เพิ่มรายการงานใหม่ (New Item)" onClick={() => {
                     const firstGroup = activeBoard.groups[0];
                     if (firstGroup) handleAddItem(firstGroup.id, 'New Item');
                   }}>
                     New Item <FiArrowDown style={{ marginLeft: '4px' }} aria-hidden="true" />
                   </button>
-                  <button type="button" className="toolbar-btn" aria-label="ค้นหารายการ"><FiSearch aria-hidden="true" /> Search</button>
-                  <button type="button" className="toolbar-btn" aria-label="กรองตามผู้รับผิดชอบ"><FiUsers aria-hidden="true" /> Person</button>
-                  <button type="button" className="toolbar-btn" aria-label="ตัวกรองเงื่อนไข"><FiFilter aria-hidden="true" /> Filter</button>
-                  <button type="button" className="toolbar-btn" aria-label="จัดเรียงลำดับ"><FiArrowDown aria-hidden="true" /> Sort</button>
-                  <button type="button" className="toolbar-btn" aria-label="ซ่อนคอลัมน์"><FiEyeOff aria-hidden="true" /> Hide</button>
-                  <button type="button" className="toolbar-btn" onClick={handleExportExcel} aria-label="ส่งออก Excel" style={{ color: '#00c875', borderColor: 'rgba(0, 200, 117, 0.4)' }}>📊 Export Excel</button>
+
+                  {/* Search Input / Button */}
+                  {isSearchingToolbar ? (
+                    <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-panel)', padding: '0 0.5rem', borderRadius: '6px', border: '1px solid var(--accent-blue)', height: '36px' }}>
+                      <FiSearch size={14} color="var(--text-muted)" />
+                      <input 
+                        autoFocus
+                        type="text" 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search items, owner, dept..."
+                        style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', padding: '0.35rem 0.5rem', outline: 'none', fontSize: '0.85rem' }}
+                      />
+                      {searchQuery && (
+                        <button type="button" onClick={() => setSearchQuery('')} style={{ color: 'var(--text-muted)', padding: '2px', cursor: 'pointer' }} title="ล้างคำค้นหา">
+                          <FiX size={14} />
+                        </button>
+                      )}
+                      <button type="button" onClick={() => { setIsSearchingToolbar(false); setSearchQuery(''); }} style={{ color: 'var(--text-muted)', marginLeft: '4px', cursor: 'pointer', fontSize: '0.78rem' }}>
+                        Close
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      type="button" 
+                      className={`toolbar-btn ${searchQuery ? 'active-filter-btn' : ''}`} 
+                      onClick={() => setIsSearchingToolbar(true)}
+                      aria-label="ค้นหารายการ"
+                    >
+                      <FiSearch aria-hidden="true" /> {searchQuery ? `"${searchQuery}"` : 'Search'}
+                    </button>
+                  )}
+
+                  {/* Person Filter */}
+                  <div style={{ position: 'relative' }}>
+                    <button 
+                      type="button" 
+                      className={`toolbar-btn ${personFilter ? 'active-filter-btn' : ''}`} 
+                      onClick={() => setActiveToolbarPopover(activeToolbarPopover === 'person' ? null : 'person')}
+                      aria-label="กรองตามผู้รับผิดชอบ"
+                    >
+                      <FiUsers aria-hidden="true" /> {personFilter ? `Person: ${personFilter}` : 'Person'}
+                    </button>
+                    {activeToolbarPopover === 'person' && (
+                      <div className="action-popover" style={{ minWidth: '180px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.78rem', padding: '0.25rem 0.5rem', color: 'var(--text-muted)' }}>Filter by Person</div>
+                        <div className="popover-option" onClick={() => { setPersonFilter(''); setActiveToolbarPopover(null); }}>
+                          {personFilter === '' ? '✓ ' : ''} All People
+                        </div>
+                        {uniquePersons.map(person => (
+                          <div key={person} className="popover-option" onClick={() => { setPersonFilter(person); setActiveToolbarPopover(null); }}>
+                            {personFilter === person ? '✓ ' : ''} 👤 {person}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Status Filter */}
+                  <div style={{ position: 'relative' }}>
+                    <button 
+                      type="button" 
+                      className={`toolbar-btn ${statusFilter ? 'active-filter-btn' : ''}`} 
+                      onClick={() => setActiveToolbarPopover(activeToolbarPopover === 'filter' ? null : 'filter')}
+                      aria-label="ตัวกรองเงื่อนไข"
+                    >
+                      <FiFilter aria-hidden="true" /> {statusFilter ? `Status: ${statusFilter}` : 'Filter'}
+                    </button>
+                    {activeToolbarPopover === 'filter' && (
+                      <div className="action-popover" style={{ minWidth: '200px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.78rem', padding: '0.25rem 0.5rem', color: 'var(--text-muted)' }}>Filter by Status</div>
+                        <div className="popover-option" onClick={() => { setStatusFilter(''); setActiveToolbarPopover(null); }}>
+                          {statusFilter === '' ? '✓ ' : ''} All Statuses
+                        </div>
+                        {(activeBoard.columns?.find(c => c.type === 'status')?.options || INITIAL_STATUS_OPTIONS).map(opt => (
+                          <div key={opt.id} className="popover-option" onClick={() => { setStatusFilter(opt.id); setActiveToolbarPopover(null); }}>
+                            {statusFilter === opt.id ? '✓ ' : ''}
+                            <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: opt.color, display: 'inline-block', marginRight: '6px' }} />
+                            {opt.label || 'Empty'}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Sort */}
+                  <div style={{ position: 'relative' }}>
+                    <button 
+                      type="button" 
+                      className={`toolbar-btn ${sortConfig ? 'active-filter-btn' : ''}`} 
+                      onClick={() => setActiveToolbarPopover(activeToolbarPopover === 'sort' ? null : 'sort')}
+                      aria-label="จัดเรียงลำดับ"
+                    >
+                      <FiArrowDown aria-hidden="true" /> {sortConfig ? `Sorted` : 'Sort'}
+                    </button>
+                    {activeToolbarPopover === 'sort' && (
+                      <div className="action-popover" style={{ minWidth: '200px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.78rem', padding: '0.25rem 0.5rem', color: 'var(--text-muted)' }}>Sort Items</div>
+                        <div className="popover-option" onClick={() => { setSortConfig(null); setActiveToolbarPopover(null); }}>
+                          {sortConfig === null ? '✓ ' : ''} Default Order
+                        </div>
+                        <div className="popover-option" onClick={() => { setSortConfig({ key: 'title', direction: 'asc' }); setActiveToolbarPopover(null); }}>
+                          {sortConfig?.key === 'title' && sortConfig.direction === 'asc' ? '✓ ' : ''} Name (A to Z)
+                        </div>
+                        <div className="popover-option" onClick={() => { setSortConfig({ key: 'title', direction: 'desc' }); setActiveToolbarPopover(null); }}>
+                          {sortConfig?.key === 'title' && sortConfig.direction === 'desc' ? '✓ ' : ''} Name (Z to A)
+                        </div>
+                        {(activeBoard.columns || []).map(col => (
+                          <div key={`sort-${col.id}`} className="popover-option" onClick={() => { setSortConfig({ key: col.id, direction: 'asc' }); setActiveToolbarPopover(null); }}>
+                            {sortConfig?.key === col.id ? '✓ ' : ''} By {col.title}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Hide Columns */}
+                  <div style={{ position: 'relative' }}>
+                    <button 
+                      type="button" 
+                      className={`toolbar-btn ${hiddenColumns.length > 0 ? 'active-filter-btn' : ''}`} 
+                      onClick={() => setActiveToolbarPopover(activeToolbarPopover === 'hide' ? null : 'hide')}
+                      aria-label="ซ่อนคอลัมน์"
+                    >
+                      <FiEyeOff aria-hidden="true" /> {hiddenColumns.length > 0 ? `Hidden (${hiddenColumns.length})` : 'Hide'}
+                    </button>
+                    {activeToolbarPopover === 'hide' && (
+                      <div className="action-popover" style={{ minWidth: '200px' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.78rem', padding: '0.25rem 0.5rem', color: 'var(--text-muted)' }}>Toggle Column Visibility</div>
+                        {(activeBoard.columns || []).map(col => {
+                          const isHidden = hiddenColumns.includes(col.id);
+                          return (
+                            <div 
+                              key={`hide-${col.id}`} 
+                              className="popover-option" 
+                              onClick={() => {
+                                if (isHidden) {
+                                  setHiddenColumns(hiddenColumns.filter(id => id !== col.id));
+                                } else {
+                                  setHiddenColumns([...hiddenColumns, col.id]);
+                                }
+                              }}
+                            >
+                              <input type="checkbox" checked={!isHidden} readOnly style={{ pointerEvents: 'none', marginRight: '6px' }} />
+                              {col.title}
+                            </div>
+                          );
+                        })}
+                        {hiddenColumns.length > 0 && (
+                          <div 
+                            className="popover-option" 
+                            style={{ borderTop: '1px solid var(--border-color)', marginTop: '4px', color: 'var(--accent-blue)' }}
+                            onClick={() => setHiddenColumns([])}
+                          >
+                            Show all columns
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Export & Import */}
+                  <button type="button" className="toolbar-btn" onClick={handleExportExcel} aria-label="ส่งออก Excel" style={{ color: '#00c875', borderColor: 'rgba(0, 200, 117, 0.4)' }}>
+                    📊 Export Excel
+                  </button>
                   <button type="button" className="toolbar-btn" onClick={() => fileInputRef.current?.click()} aria-label="นำเข้าไฟล์ Excel หรือ CSV" style={{ color: '#579bfc', borderColor: 'rgba(87, 155, 252, 0.4)' }}>
                     <FiUpload style={{ marginRight: '4px' }} aria-hidden="true" /> Import Excel / CSV
                   </button>
                   <input type="file" ref={fileInputRef} accept=".csv" onChange={handleImportFileChange} style={{ display: 'none' }} aria-label="เลือกไฟล์ CSV สำหรับนำเข้า" />
-                  <button type="button" className="toolbar-btn" aria-label="ตัวเลือกเพิ่มเติม"><FiMoreHorizontal aria-hidden="true" /></button>
+
+                  {/* More Options */}
+                  <div style={{ position: 'relative' }}>
+                    <button 
+                      type="button" 
+                      className={`toolbar-btn ${groupBy !== 'default' ? 'active-filter-btn' : ''}`} 
+                      onClick={() => setActiveToolbarPopover(activeToolbarPopover === 'more' ? null : 'more')}
+                      aria-label="ตัวเลือกเพิ่มเติม"
+                    >
+                      <FiMoreHorizontal aria-hidden="true" />
+                    </button>
+                    {activeToolbarPopover === 'more' && (
+                      <div className="action-popover" style={{ minWidth: '220px', right: 0, left: 'auto' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.78rem', padding: '0.25rem 0.5rem', color: 'var(--text-muted)' }}>Board Settings</div>
+                        <div className="popover-option" onClick={() => { setGroupBy(groupBy === 'status' ? 'default' : 'status'); setActiveToolbarPopover(null); }}>
+                          <FiLayers /> {groupBy === 'status' ? '✓ จัดกลุ่มตามสถานะ' : 'จัดกลุ่มตามสถานะ (Group by Status)'}
+                        </div>
+                        <div className="popover-option" onClick={() => { handleDuplicateBoard(activeBoard.id); setActiveToolbarPopover(null); }}>
+                          <FiCopy color="#fdab3d" /> คัดลอกบอร์ด (Duplicate Board)
+                        </div>
+                        <div className="popover-option" onClick={() => { handleAddGroup(); setActiveToolbarPopover(null); }}>
+                          <FiPlus color="#00c875" /> เพิ่มกลุ่มงานใหม่ (Add Group)
+                        </div>
+                        <div className="popover-option" onClick={() => { window.print(); setActiveToolbarPopover(null); }}>
+                          <FiPrinter color="#579bfc" /> พิมพ์ / ส่งออก PDF (Print)
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -1015,20 +1259,20 @@ const App = () => {
                     updateColumnWidth={handleUpdateColumnWidth}
                     reorderColumns={handleReorderColumns}
                     reorderItem={handleReorderItem}
+                    hiddenColumns={hiddenColumns}
                     onOpenItem={(groupId, itemId) => {
                       setTaskDrawerOpen(true);
                       setActiveItemContext({ groupId, itemId });
                     }}
                     searchQuery={searchQuery}
-                    filters={filters}
-                    isGroupedByStatus={isGroupedByStatus}
+                    isGroupedByStatus={groupBy === 'status'}
                   />
                 )}
                 {activeBoard.type === 'grid' && viewType === 'kanban' && <KanbanView board={activeBoard} updateItem={handleUpdateItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} />}
                 {activeBoard.type === 'grid' && viewType === 'gantt' && <GanttView board={activeBoard} updateItem={handleUpdateItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} />}
-                {activeBoard.type === 'grid' && viewType === 'form' && <FormView board={activeBoard} onSubmit={(data) => { if (activeBoard.groups.length > 0) { const firstGroup = activeBoard.groups[0]; handleAddItem(firstGroup.id, data.title || "New Item"); } }} />}
+                {activeBoard.type === 'grid' && viewType === 'form' && <FormView board={activeBoard} addItem={handleAddItem} updateItem={handleUpdateItem} />}
                 {activeBoard.type === 'grid' && viewType === 'presentation' && <PresentationView board={activeBoard} />}
-                {activeBoard.type === 'doc' && <DocumentView board={activeBoard} onClose={() => {
+                {activeBoard.type === 'doc' && <DocumentView board={activeBoard} updateDocument={handleUpdateDocument} onClose={() => {
                   const firstGrid = boards.find(b => b.type === 'grid');
                   if (firstGrid) setActiveBoardId(firstGrid.id);
                 }} />}
@@ -1059,8 +1303,22 @@ const App = () => {
       <AiCopilot 
         activeBoard={activeBoard} 
         boards={boards} 
-        onAddItem={handleAddItem} 
-        onAddDocument={handleAddBoard} 
+        onAddItem={(taskTitle) => {
+          if (activeBoard && activeBoard.groups && activeBoard.groups.length > 0) {
+            handleAddItem(activeBoard.groups[0].id, taskTitle);
+          }
+        }} 
+        onAddDocument={(docTitle, content) => {
+          const newDoc = {
+            id: uuidv4(),
+            title: docTitle || 'New Document',
+            type: 'doc',
+            color: 'var(--accent-purple)',
+            content: content || ''
+          };
+          setBoards(prev => [...prev, newDoc]);
+          setActiveBoardId(newDoc.id);
+        }} 
       />
 
       <IntegrationsModal 

@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiGrid, FiFolder, FiSearch, FiMoreHorizontal, FiPlus, FiLayout, FiChevronDown, FiChevronRight, FiFileText, FiEdit2, FiTrash2 , FiHome, FiCheckSquare, FiVideo, FiStar, FiX } from 'react-icons/fi';
+import { FiGrid, FiFolder, FiSearch, FiMoreHorizontal, FiPlus, FiLayout, FiChevronDown, FiChevronRight, FiFileText, FiEdit2, FiTrash2, FiHome, FiCheckSquare, FiVideo, FiStar, FiX, FiCopy } from 'react-icons/fi';
 
 const Sidebar = ({ 
   boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoard, onRenameBoard, onMoveBoard,
   activeSpecialView, onSelectSpecialView, onResetToBlank,
-  isOpen = true, onClose
+  isOpen = true, onClose, onDuplicateBoard
 }) => {
   const handleNavigate = (action) => {
     if (typeof action === 'function') action();
@@ -261,6 +261,11 @@ const Sidebar = ({
               <div className="add-menu-item" onClick={(e) => { e.stopPropagation(); setEditingBoardId(board.id); setEditTitle(board.title); setActionMenuId(null); }}>
                 <FiEdit2 color="var(--accent-blue)" /> Rename
               </div>
+              {!isFolder && onDuplicateBoard && (
+                <div className="add-menu-item" onClick={(e) => { e.stopPropagation(); onDuplicateBoard(board.id); setActionMenuId(null); }}>
+                  <FiCopy color="#fdab3d" /> Duplicate
+                </div>
+              )}
               {isFolder && (
                 <>
                   <div className="add-menu-item" onClick={(e) => { e.stopPropagation(); handleAdd('grid', board.id); setActionMenuId(null); }}>
