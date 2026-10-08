@@ -48,3 +48,14 @@ HTMLCanvasElement.prototype.getContext = () => ({
 beforeEach(() => {
   localStorage.clear();
 });
+
+if (typeof navigator !== 'undefined' && !navigator.wakeLock) {
+  navigator.wakeLock = {
+    request: async () => ({
+      released: false,
+      release: async function() { this.released = true; },
+      addEventListener: () => {},
+      removeEventListener: () => {}
+    })
+  };
+}

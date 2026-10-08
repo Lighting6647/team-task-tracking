@@ -1,6 +1,6 @@
 import { 
   FiMoreHorizontal, FiSearch, FiFilter, FiArrowDown, FiEyeOff, FiUsers, 
-  FiSettings, FiMenu, FiSun, FiMoon, FiUpload, FiX, FiCopy, FiPrinter, FiLayers, FiPlus 
+  FiSettings, FiMenu, FiSun, FiMoon, FiUpload, FiX, FiCopy, FiPrinter, FiLayers, FiPlus, FiCoffee 
 } from 'react-icons/fi';
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
@@ -326,6 +326,70 @@ const App = () => {
   const [viewType, setViewType] = useState('table'); // 'table' | 'kanban' | 'gantt' | 'form' | 'presentation'
   const [activeItemContext, setActiveItemContext] = useState(null); // { groupId, itemId }
   const [taskDrawerOpen, setTaskDrawerOpen] = useState(false);
+  const [stayAwake, setStayAwake] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lightbeam_stay_awake');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch (_e) {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('lightbeam_stay_awake', JSON.stringify(stayAwake));
+    } catch (_e) {}
+  }, [stayAwake]);
+
+  // Screen Wake Lock & Tab Sleep Management (Prevents screen & device from sleeping)
+  useEffect(() => {
+    let sentinel = null;
+    let isActive = true;
+
+    async function requestLock() {
+      if (!stayAwake && viewType !== 'presentation') return;
+      if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+        try {
+          sentinel = await navigator.wakeLock.request('screen');
+        } catch (_err) {
+          // Wake lock unavailable or denied
+        }
+      }
+    }
+
+    requestLock();
+
+    const handleVisibilityAndFocus = () => {
+      if (document.visibilityState === 'visible' && isActive) {
+        requestLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityAndFocus);
+    window.addEventListener('focus', handleVisibilityAndFocus);
+
+    return () => {
+      isActive = false;
+      document.removeEventListener('visibilitychange', handleVisibilityAndFocus);
+      window.removeEventListener('focus', handleVisibilityAndFocus);
+      if (sentinel) {
+        sentinel.release().catch(() => {});
+      }
+    };
+  }, [stayAwake, viewType]);
+
+  // Periodic Client-Side Keep-Alive Heartbeat (Prevents cloud hosting like Render from sleeping)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const isLocal = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1');
+    if (isLocal) return;
+
+    const interval = setInterval(() => {
+      fetch(`${window.location.origin}/favicon.svg`, { method: 'HEAD', cache: 'no-store' }).catch(() => {});
+    }, 10 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
   
   const [personFilter, setPersonFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -892,6 +956,15 @@ const App = () => {
           <NotificationCenter boards={boards} />
           <button 
             type="button"
+            onClick={() => setStayAwake(!stayAwake)}
+            className={`mobile-theme-btn ${stayAwake ? 'active-filter-btn' : ''}`}
+            title={stayAwake ? 'ระบบป้องกันหน้าจอดับ: เปิดใช้งานอยู่ (Screen will stay awake)' : 'เปิดระบบป้องกันหน้าจอดับ (Keep screen awake)'}
+            aria-label={stayAwake ? 'ปิดระบบป้องกันหน้าจอดับ' : 'เปิดระบบป้องกันหน้าจอดับ'}
+          >
+            <FiCoffee color={stayAwake ? '#00c875' : 'var(--text-muted)'} size={17} aria-hidden="true" />
+          </button>
+          <button 
+            type="button"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
             className="mobile-theme-btn"
             title={theme === 'dark' ? 'สลับเป็น Light Mode' : 'สลับเป็น Dark Mode'}
@@ -995,6 +1068,16 @@ const App = () => {
                   </div>
                   <div className="board-header-actions">
                     <NotificationCenter boards={boards} />
+                    <button 
+                      type="button" 
+                      onClick={() => setStayAwake(!stayAwake)} 
+                      className={`theme-toggle-btn ${stayAwake ? 'active-filter-btn' : ''}`}
+                      title={stayAwake ? 'ระบบป้องกันหน้าจอดับ: เปิดใช้งานอยู่ (Screen will stay awake)' : 'เปิดระบบป้องกันหน้าจอดับ (Keep screen awake)'}
+                      aria-label={stayAwake ? 'ปิดระบบป้องกันหน้าจอดับ' : 'เปิดระบบป้องกันหน้าจอดับ'}
+                    >
+                      <FiCoffee color={stayAwake ? '#00c875' : 'var(--text-muted)'} size={14} />
+                      <span className="theme-toggle-label">{stayAwake ? 'Stay Awake ✓' : 'Stay Awake'}</span>
+                    </button>
                     <button 
                       type="button" 
                       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 

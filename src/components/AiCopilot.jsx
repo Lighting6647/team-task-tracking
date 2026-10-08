@@ -22,6 +22,8 @@ const AiCopilot = ({ activeBoard, onAddItem, onAddDocument }) => {
     setIsTyping(true);
 
     setTimeout(() => {
+      const lower = textToSend.toLowerCase();
+      let replyText = '';
       let actionType = null;
       let actionData = null;
 

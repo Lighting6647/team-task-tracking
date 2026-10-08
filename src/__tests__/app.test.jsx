@@ -337,4 +337,25 @@ describe('LightBeam OS - Complete Feature & Navigation Tests', () => {
     fireEvent.click(allFilterBtn);
     expect(screen.getAllByText(/Pass App ›/i).length).toBeGreaterThan(0);
   });
+
+  it('tests Stay Awake screen wake lock toggle and presentation badge', async () => {
+    render(<App />);
+
+    // Toggle Stay Awake button in header
+    const stayAwakeBtns = screen.getAllByRole('button', { name: /ระบบป้องกันหน้าจอดับ/i });
+    expect(stayAwakeBtns.length).toBeGreaterThan(0);
+    fireEvent.click(stayAwakeBtns[0]);
+
+    // Click again to turn back on
+    fireEvent.click(stayAwakeBtns[0]);
+
+    // Switch to Presentation view
+    const presentationTab = screen.getByRole('tab', { name: /Presentation/i });
+    fireEvent.click(presentationTab);
+
+    // Verify stay awake badge is visible in presentation mode
+    await waitFor(() => {
+      expect(screen.getByText(/จอเปิดตลอด \(Stay Awake\)|โหมดนำเสนอ/i)).toBeDefined();
+    });
+  });
 });

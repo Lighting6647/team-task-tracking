@@ -1,9 +1,47 @@
-import React, { useState } from 'react';
-import { FiChevronLeft, FiChevronRight, FiPlay, FiMaximize2, FiMinimize2, FiLayers, FiCheckCircle, FiClock, FiAlertCircle } from 'react-icons/fi';
+import React, { useState, useEffect } from 'react';
+import { FiChevronLeft, FiChevronRight, FiMaximize2, FiMinimize2, FiCoffee } from 'react-icons/fi';
 
 const PresentationView = ({ board }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [wakeLockActive, setWakeLockActive] = useState(false);
+
+  useEffect(() => {
+    let sentinel = null;
+    let isMounted = true;
+
+    async function acquireLock() {
+      if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+        try {
+          sentinel = await navigator.wakeLock.request('screen');
+          if (isMounted) setWakeLockActive(true);
+          sentinel.addEventListener('release', () => {
+            if (isMounted) setWakeLockActive(false);
+          });
+        } catch (_err) {
+          // Wake lock unavailable or denied
+        }
+      }
+    }
+
+    acquireLock();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isMounted) {
+        acquireLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      isMounted = false;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (sentinel) {
+        sentinel.release().catch(() => {});
+      }
+    };
+  }, []);
 
   if (!board || board.type !== 'grid') {
     return (
@@ -94,6 +132,23 @@ const PresentationView = ({ board }) => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span 
+            title="ระบบป้องกันหน้าจอดับ (Screen Wake Lock): หน้าจอจะไม่ดับอัตโนมัติขณะอยู่ในโหมดนำเสนอ"
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '5px', 
+              fontSize: '0.8rem', 
+              fontWeight: 600,
+              color: wakeLockActive ? '#00c875' : '#fdab3d', 
+              background: wakeLockActive ? 'rgba(0, 200, 117, 0.12)' : 'rgba(253, 171, 61, 0.12)', 
+              border: `1px solid ${wakeLockActive ? 'rgba(0, 200, 117, 0.3)' : 'rgba(253, 171, 61, 0.3)'}`, 
+              padding: '3px 10px', 
+              borderRadius: '20px' 
+            }}
+          >
+            <FiCoffee size={13} /> {wakeLockActive ? 'จอเปิดตลอด (Stay Awake)' : 'โหมดนำเสนอ'}
+          </span>
           <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
             สไลด์ {currentSlide + 1} จาก {slides.length}
           </span>
