@@ -186,6 +186,7 @@ input {
   transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
   height: 100vh;
+  overflow: hidden;
 }
 .sidebar-brand-header {
   display: flex;
@@ -800,7 +801,7 @@ body {
   overscroll-behavior: none;
 }
 
-.main-content, .sidebar, .board-container, .document-view-container {
+.main-content, .board-container, .document-view-container {
   overflow-y: auto;
   overscroll-behavior: contain;
 }
