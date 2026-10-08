@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiX, FiCheck, FiPlus, FiZap, FiTrash2 } from 'react-icons/fi';
+import { FiX, FiPlus, FiZap, FiTrash2 } from 'react-icons/fi';
 
 const INITIAL_RECIPES = [
   {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiCheckCircle, FiClock, FiAlertCircle, FiSearch, FiList, FiFilter, FiExternalLink } from 'react-icons/fi';
+import { FiCheckCircle, FiClock, FiAlertCircle, FiSearch, FiExternalLink } from 'react-icons/fi';
 import StatusDropdown from './StatusDropdown';
 
 const MyWorkView = ({ boards, onSelectBoard, onOpenItem, updateItem }) => {

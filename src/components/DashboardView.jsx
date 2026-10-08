@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { FiTrash2, FiCpu, FiPlus, FiSettings, FiCheck } from 'react-icons/fi';
+import { FiTrash2, FiCpu, FiSettings, FiCheck } from 'react-icons/fi';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#fdab3d', '#e2445c'];
 

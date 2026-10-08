@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FiX, FiCheck, FiRefreshCw, FiGlobe, FiMail, FiMessageSquare, FiDatabase, FiCloud } from 'react-icons/fi';
+import { FiX, FiCheck, FiRefreshCw } from 'react-icons/fi';
 
 const INTEGRATIONS = [
   {

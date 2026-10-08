@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { FiSend, FiCheckCircle } from 'react-icons/fi';
-import { v4 as uuidv4 } from 'uuid';
 
-const FormView = ({ board, addItem, updateItem }) => {
+const FormView = ({ board, addItem }) => {
   const [formData, setFormData] = useState({});
   const [submitted, setSubmitted] = useState(false);
 

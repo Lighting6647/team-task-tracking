@@ -276,6 +276,16 @@ const Sidebar = ({
                   </div>
                 </>
               )}
+              <div 
+                className="add-menu-item" 
+                onClick={(e) => { 
+                  e.stopPropagation(); 
+                  setFavorites(prev => prev.includes(board.id) ? prev.filter(id => id !== board.id) : [...prev, board.id]); 
+                  setActionMenuId(null); 
+                }}
+              >
+                <FiStar color={favorites.includes(board.id) ? '#fdab3d' : 'var(--text-muted)'} /> {favorites.includes(board.id) ? 'Remove Favorite' : 'Favorite'}
+              </div>
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', margin: '4px 0' }}></div>
               <div className="add-menu-item" style={{ color: 'var(--danger-color, #ff4d4d)' }} onClick={(e) => { e.stopPropagation(); handleDelete(board.id, e); }}>
                 <FiTrash2 color="var(--danger-color, #ff4d4d)" /> Delete
@@ -319,7 +329,7 @@ const Sidebar = ({
           className={`sidebar-menu-item ${!activeSpecialView && activeBoardId === 'board-passapp-1' ? 'active' : ''}`}
           onClick={() => {
             handleNavigate(() => {
-              onSelectSpecialView && onSelectSpecialView(null);
+              if (onSelectSpecialView) onSelectSpecialView(null);
               const firstGrid = boards.find(b => b.type === 'grid');
               if (firstGrid) onSelectBoard(firstGrid.id);
             });
@@ -333,7 +343,7 @@ const Sidebar = ({
           className={`sidebar-menu-item ${activeSpecialView === 'my-work' ? 'active' : ''}`}
           onClick={() => {
             handleNavigate(() => {
-              onSelectSpecialView && onSelectSpecialView('my-work');
+              if (onSelectSpecialView) onSelectSpecialView('my-work');
             });
           }}
           style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
@@ -345,7 +355,7 @@ const Sidebar = ({
           className={`sidebar-menu-item ${activeSpecialView === 'ai-notetaker' ? 'active' : ''}`}
           onClick={() => {
             handleNavigate(() => {
-              onSelectSpecialView && onSelectSpecialView('ai-notetaker');
+              if (onSelectSpecialView) onSelectSpecialView('ai-notetaker');
             });
           }}
           style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
@@ -386,7 +396,7 @@ const Sidebar = ({
                   handleNavigate(() => {
                     const dashboardBoard = boards.find(b => b.type === 'dashboard');
                     if (dashboardBoard) {
-                      onSelectSpecialView && onSelectSpecialView(null);
+                      if (onSelectSpecialView) onSelectSpecialView(null);
                       onSelectBoard(dashboardBoard.id);
                     }
                   });
@@ -400,7 +410,7 @@ const Sidebar = ({
                 className="add-menu-item"
                 onClick={() => {
                   if (window.confirm("คุณต้องการรีเซ็ตเป็นบอร์ดว่างเปล่า (Blank Board) ใช่หรือไม่? ข้อมูลตัวอย่างจะถูกล้าง")) {
-                    onResetToBlank && onResetToBlank();
+                    if (onResetToBlank) onResetToBlank();
                     setShowMoreMenu(false);
                   }
                 }}

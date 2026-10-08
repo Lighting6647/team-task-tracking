@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiBell, FiCheck, FiClock, FiAlertCircle, FiCheckSquare, FiFileText } from 'react-icons/fi';
+import { FiBell } from 'react-icons/fi';
 
-const NotificationCenter = ({ boards }) => {
+const NotificationCenter = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(3);
   const containerRef = useRef(null);

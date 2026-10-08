@@ -1,7 +1,7 @@
 import React from 'react';
-import { FiClock, FiUser, FiMessageCircle } from 'react-icons/fi';
+import { FiClock, FiUser, FiMessageCircle, FiPlus } from 'react-icons/fi';
 
-const KanbanView = ({ board, updateItem, onOpenItem }) => {
+const KanbanView = ({ board, updateItem, onOpenItem, addItem }) => {
   if (!board || board.type !== 'grid') return null;
 
   const statusCol = board.columns.find(c => c.type === 'status');
@@ -133,7 +133,9 @@ const KanbanView = ({ board, updateItem, onOpenItem }) => {
                   onClick={(e) => {
                     // Prevent drawer open if they are dragging
                     if (e.defaultPrevented) return;
-                    onOpenItem && onOpenItem(item.groupId, item.id);
+                    if (onOpenItem) {
+                      onOpenItem(item.groupId, item.id);
+                    }
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
@@ -167,6 +169,45 @@ const KanbanView = ({ board, updateItem, onOpenItem }) => {
                 </div>
               )}
             </div>
+
+            {addItem && (
+              <div style={{ padding: '0.75rem 1rem', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const firstGroup = (board.groups || [])[0];
+                    if (firstGroup) {
+                      addItem(firstGroup.id, 'New Card', { [statusCol.id]: option.id });
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px dashed rgba(255,255,255,0.15)',
+                    borderRadius: '6px',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    fontSize: '0.82rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                    e.currentTarget.style.color = '#fff';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.04)';
+                    e.currentTarget.style.color = 'var(--text-muted)';
+                  }}
+                >
+                  <FiPlus size={14} /> + เพิ่มการ์ด ({option.label || 'Empty'})
+                </button>
+              </div>
+            )}
           </div>
         );
       })}

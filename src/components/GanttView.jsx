@@ -5,22 +5,21 @@ const GanttView = ({ board, groups: propGroups, columns: propColumns, onOpenItem
   const [zoom, setZoom] = useState('weeks'); // 'days', 'weeks', 'months'
   const [expandedGroups, setExpandedGroups] = useState({});
 
-  const groups = propGroups || board?.groups || [];
-  const columns = propColumns || board?.columns || [];
+  const groups = useMemo(() => propGroups || board?.groups || [], [propGroups, board?.groups]);
+  const columns = useMemo(() => propColumns || board?.columns || [], [propColumns, board?.columns]);
 
   // Find timeline or date columns
   const dateColumns = columns.filter(c => c.type === 'timeline' || c.type === 'date');
   const mainDateCol = dateColumns[0];
 
   // Calculate timeline range
-  const { minDate, maxDate, allItems } = useMemo(() => {
+  const { minDate, maxDate } = useMemo(() => {
     let min = new Date('2099-01-01').getTime();
     let max = new Date('1970-01-01').getTime();
-    const items = [];
     let hasDates = false;
 
     groups.forEach(group => {
-      group.items.forEach(item => {
+      (group.items || []).forEach(item => {
         let start, end;
         if (mainDateCol) {
           if (mainDateCol.type === 'timeline' && item[mainDateCol.id]) {
@@ -36,7 +35,6 @@ const GanttView = ({ board, groups: propGroups, columns: propColumns, onOpenItem
           min = Math.min(min, start);
           max = Math.max(max, end || start);
           hasDates = true;
-          items.push({ ...item, start, end: end || start, groupId: group.id, color: group.color });
         }
       });
     });
@@ -50,7 +48,7 @@ const GanttView = ({ board, groups: propGroups, columns: propColumns, onOpenItem
       max += 14 * 86400000; // pad 2 weeks
     }
 
-    return { minDate: min, maxDate: max, allItems: items };
+    return { minDate: min, maxDate: max };
   }, [groups, mainDateCol]);
 
   const days = Math.ceil((maxDate - minDate) / 86400000);
@@ -65,7 +63,10 @@ const GanttView = ({ board, groups: propGroups, columns: propColumns, onOpenItem
   };
 
   const toggleGroup = (groupId) => {
-    setExpandedGroups(prev => ({...prev, [groupId]: !prev[groupId]}));
+    setExpandedGroups(prev => ({
+      ...prev,
+      [groupId]: prev[groupId] !== undefined ? !prev[groupId] : false
+    }));
   };
 
   if (!mainDateCol) {
@@ -114,10 +115,10 @@ const GanttView = ({ board, groups: propGroups, columns: propColumns, onOpenItem
                     background: 'rgba(255,255,255,0.02)'
                   }}
                 >
-                  {expandedGroups[group.id] ? <FiChevronDown style={{marginRight:'8px'}}/> : <FiChevronRight style={{marginRight:'8px'}}/>}
+                  {expandedGroups[group.id] !== false ? <FiChevronDown style={{marginRight:'8px'}}/> : <FiChevronRight style={{marginRight:'8px'}}/>}
                   {group.title}
                 </div>
-                {expandedGroups[group.id] && group.items.map(item => (
+                {expandedGroups[group.id] !== false && (group.items || []).map(item => (
                   <div 
                     key={item.id} 
                     style={{ 
@@ -130,7 +131,7 @@ const GanttView = ({ board, groups: propGroups, columns: propColumns, onOpenItem
                       color: 'var(--text-main)',
                       fontSize: '0.9rem'
                     }}
-                    onClick={() => onOpenItem(group.id, item.id)}
+                    onClick={() => onOpenItem && onOpenItem(group.id, item.id)}
                   >
                     {item.title}
                   </div>
@@ -164,7 +165,7 @@ const GanttView = ({ board, groups: propGroups, columns: propColumns, onOpenItem
             {groups.map(group => (
               <React.Fragment key={group.id}>
                 <div style={{ height: '45px' }}></div>
-                {expandedGroups[group.id] && group.items.map(item => {
+                {expandedGroups[group.id] !== false && (group.items || []).map(item => {
                   let start, end;
                   if (mainDateCol.type === 'timeline' && item[mainDateCol.id]) {
                     start = new Date(item[mainDateCol.id].start).getTime();
@@ -198,7 +199,7 @@ const GanttView = ({ board, groups: propGroups, columns: propColumns, onOpenItem
                         }}
                         onMouseEnter={(e) => e.currentTarget.style.transform = 'scaleY(1.1)'}
                         onMouseLeave={(e) => e.currentTarget.style.transform = 'scaleY(1)'}
-                        onClick={() => onOpenItem(group.id, item.id)}
+                        onClick={() => onOpenItem && onOpenItem(group.id, item.id)}
                         title={item.title}
                       />
                     </div>

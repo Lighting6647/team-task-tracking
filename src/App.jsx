@@ -210,7 +210,7 @@ const App = () => {
           }
           return b;
         });
-      } catch (_e) {
+      } catch {
         return JSON.parse(JSON.stringify(INITIAL_BOARDS));
       }
     }
@@ -330,7 +330,7 @@ const App = () => {
     try {
       const saved = localStorage.getItem('lightbeam_stay_awake');
       return saved !== null ? JSON.parse(saved) : true;
-    } catch (_e) {
+    } catch {
       return true;
     }
   });
@@ -338,7 +338,7 @@ const App = () => {
   useEffect(() => {
     try {
       localStorage.setItem('lightbeam_stay_awake', JSON.stringify(stayAwake));
-    } catch (_e) {}
+    } catch {}
   }, [stayAwake]);
 
   // Screen Wake Lock & Tab Sleep Management (Prevents screen & device from sleeping)
@@ -351,7 +351,7 @@ const App = () => {
       if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
         try {
           sentinel = await navigator.wakeLock.request('screen');
-        } catch (_err) {
+        } catch {
           // Wake lock unavailable or denied
         }
       }
@@ -1360,7 +1360,7 @@ const App = () => {
                     isGroupedByStatus={groupBy === 'status'}
                   />
                 )}
-                {activeBoard.type === 'grid' && viewType === 'kanban' && <KanbanView board={activeBoard} updateItem={handleUpdateItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} />}
+                {activeBoard.type === 'grid' && viewType === 'kanban' && <KanbanView board={activeBoard} updateItem={handleUpdateItem} addItem={handleAddItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} />}
                 {activeBoard.type === 'grid' && viewType === 'gantt' && <GanttView board={activeBoard} updateItem={handleUpdateItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} />}
                 {activeBoard.type === 'grid' && viewType === 'form' && <FormView board={activeBoard} addItem={handleAddItem} updateItem={handleUpdateItem} />}
                 {activeBoard.type === 'grid' && viewType === 'presentation' && <PresentationView board={activeBoard} />}

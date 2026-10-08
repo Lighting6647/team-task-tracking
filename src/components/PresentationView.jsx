@@ -18,7 +18,7 @@ const PresentationView = ({ board }) => {
           sentinel.addEventListener('release', () => {
             if (isMounted) setWakeLockActive(false);
           });
-        } catch (_err) {
+        } catch {
           // Wake lock unavailable or denied
         }
       }

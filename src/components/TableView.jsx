@@ -234,7 +234,7 @@ const TableView = ({
       if (data.type === 'item' && reorderItem) {
         reorderItem(data.groupId, data.itemId, targetGroupId, targetItemId);
       }
-    } catch(err) {}
+    } catch {}
     setDraggedItem(null);
   };
 
@@ -422,7 +422,7 @@ const TableView = ({
                       className="column-header"
                       draggable
                       onDragStart={(e) => handleColDragStart(e, col.id)}
-                      onDragOver={handleRowDragOver}
+                      onDragOver={handleColDragOver}
                       onDrop={(e) => handleColDrop(e, col.id)}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', position: 'relative' }}>
@@ -498,12 +498,35 @@ const TableView = ({
                       onDragEnd={handleRowDragEnd}
                       onDragOver={handleRowDragOver}
                       onDrop={(e) => handleRowDrop(e, group.id, item.id)}
+                      onMouseEnter={() => setHoveredItemId(item.id)}
+                      onMouseLeave={() => setHoveredItemId(null)}
                       style={{ cursor: !isGroupedByStatus ? 'grab' : 'default' }}
                     >
                       <td className="cell-checkbox">
-                    <div className="group-color-indicator" style={{ backgroundColor: group.color || 'var(--accent-blue)' }}></div>
-                    <div style={{ opacity: hoveredItemId === item.id ? 1 : 0, transition: 'opacity 0.2s', width: '14px', height: '14px', border: '1px solid var(--border-color)', borderRadius: '2px', margin: '0 auto', cursor: 'pointer' }}></div>
-                  </td>
+                        <div className="group-color-indicator" style={{ backgroundColor: group.color || 'var(--accent-blue)' }}></div>
+                        <div 
+                          style={{ 
+                            opacity: (hoveredItemId === item.id || selectedItems.some(i => i.itemId === item.id)) ? 1 : 0, 
+                            transition: 'opacity 0.2s', 
+                            width: '14px', 
+                            height: '14px', 
+                            border: '1px solid var(--border-color)', 
+                            borderRadius: '3px', 
+                            margin: '0 auto', 
+                            cursor: 'pointer',
+                            background: selectedItems.some(i => i.itemId === item.id) ? 'var(--accent-blue)' : 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#fff',
+                            fontSize: '10px'
+                          }}
+                          onClick={() => toggleSelection(group.id, item.id)}
+                          title="Select row"
+                        >
+                          {selectedItems.some(i => i.itemId === item.id) ? '✓' : ''}
+                        </div>
+                      </td>
                       <td>
                         <div className="cell-content" style={{ justifyContent: 'space-between', paddingRight: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', flex: 1, gap: '4px' }}>
@@ -646,12 +669,7 @@ const TableView = ({
                       placeholder="+ Add item (Press Enter)"
                       value={newItems[group.id] || ''}
                       onChange={(e) => setNewItems({...newItems, [group.id]: e.target.value})}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && e.target.value.trim()) {
-                          addItem(group.id, e.target.value);
-                          setNewItems({...newItems, [group.id]: ''});
-                        }
-                      }}
+                      onKeyDown={(e) => handleAddSubmit(e, group.id)}
                     />
                   </div>
                 </td>
