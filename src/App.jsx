@@ -19,6 +19,7 @@ import AiCopilot from './components/AiCopilot';
 import NotificationCenter from './components/NotificationCenter';
 import IntegrationsModal from './components/IntegrationsModal';
 import AutomationsModal from './components/AutomationsModal';
+import MobileBottomNav from './components/MobileBottomNav';
 import './index.css';
 
 const INITIAL_STATUS_OPTIONS = [
@@ -226,6 +227,7 @@ const App = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(
     typeof window !== 'undefined' ? window.innerWidth > 1024 : false
   );
+  const [isAiCopilotOpen, setIsAiCopilotOpen] = useState(false);
   const fileInputRef = React.useRef(null);
 
   useEffect(() => {
@@ -913,7 +915,7 @@ const App = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', backgroundColor: 'var(--bg-main)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', height: '100dvh', maxHeight: '100dvh', backgroundColor: 'var(--bg-main)' }}>
       {/* WCAG 2.4.1 Skip to Main Content Link */}
       <a href="#main-board-content" className="skip-to-content">
         ข้ามไปยังเนื้อหาหลัก (Skip to main content)
@@ -975,7 +977,7 @@ const App = () => {
         </div>
       </header>
 
-      <div className="app-container" style={{ flex: 1, display: 'flex', overflow: 'hidden', height: '100vh', position: 'relative' }}>
+      <div className="app-container" style={{ flex: 1, display: 'flex', overflow: 'hidden', height: '100%', minHeight: 0, position: 'relative' }}>
         {/* Backdrop overlay for mobile & tablet drawer */}
         {isSidebarOpen && (
           <div 
@@ -1395,6 +1397,8 @@ const App = () => {
       <AiCopilot 
         activeBoard={activeBoard} 
         boards={boards} 
+        isOpen={isAiCopilotOpen}
+        onToggleOpen={setIsAiCopilotOpen}
         onAddItem={(taskTitle) => {
           if (activeBoard && activeBoard.groups && activeBoard.groups.length > 0) {
             handleAddItem(activeBoard.groups[0].id, taskTitle);
@@ -1421,6 +1425,22 @@ const App = () => {
       <AutomationsModal 
         isOpen={automationsOpen} 
         onClose={() => setAutomationsOpen(false)} 
+      />
+
+      <MobileBottomNav 
+        activeBoard={activeBoard}
+        viewType={viewType}
+        onSelectView={setViewType}
+        onOpenSidebar={() => setIsSidebarOpen(true)}
+        onQuickAdd={() => {
+          if (activeBoard && activeBoard.groups && activeBoard.groups.length > 0) {
+            handleAddItem(activeBoard.groups[0].id, 'New Item');
+          }
+        }}
+        onToggleAi={() => setIsAiCopilotOpen(prev => !prev)}
+        isAiOpen={isAiCopilotOpen}
+        activeSpecialView={activeSpecialView}
+        onSelectSpecialView={setActiveSpecialView}
       />
     </div>
   );

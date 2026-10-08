@@ -80,24 +80,17 @@ const GanttView = ({ board, groups: propGroups, columns: propColumns, onOpenItem
   }
 
   return (
-    <div style={{ padding: '1rem', height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem', gap: '0.5rem' }}>
+    <div className="gantt-container">
+      <div className="gantt-controls">
         <button className={`btn-outline ${zoom === 'days' ? 'active' : ''}`} onClick={() => setZoom('days')} style={{ background: zoom === 'days' ? 'rgba(0,133,255,0.2)' : 'transparent', color: zoom === 'days' ? '#fff' : 'var(--text-muted)' }}>Days</button>
         <button className={`btn-outline ${zoom === 'weeks' ? 'active' : ''}`} onClick={() => setZoom('weeks')} style={{ background: zoom === 'weeks' ? 'rgba(0,133,255,0.2)' : 'transparent', color: zoom === 'weeks' ? '#fff' : 'var(--text-muted)' }}>Weeks</button>
         <button className={`btn-outline ${zoom === 'months' ? 'active' : ''}`} onClick={() => setZoom('months')} style={{ background: zoom === 'months' ? 'rgba(0,133,255,0.2)' : 'transparent', color: zoom === 'months' ? '#fff' : 'var(--text-muted)' }}>Months</button>
       </div>
       
-      <div style={{ 
-        flex: 1, 
-        overflow: 'auto', 
-        background: 'var(--bg-glass)', 
-        borderRadius: '12px', 
-        border: '1px solid var(--glass-border)',
-        display: 'flex'
-      }}>
+      <div className="gantt-main-area">
         {/* Left side: Item list */}
-        <div style={{ width: '300px', flexShrink: 0, borderRight: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.2)' }}>
-          <div style={{ height: '50px', borderBottom: '1px solid var(--glass-border)', padding: '1rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
+        <div className="gantt-items-sidebar">
+          <div style={{ height: '50px', borderBottom: '1px solid var(--border-color)', padding: '0.75rem 1rem', fontWeight: 'bold', color: 'var(--text-main)', display: 'flex', alignItems: 'center' }}>
             Items
           </div>
           <div style={{ padding: '0.5rem 0' }}>

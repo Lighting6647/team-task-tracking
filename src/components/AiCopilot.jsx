@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
 import { FiX, FiSend, FiZap, FiFileText, FiPlus } from 'react-icons/fi';
 
-const AiCopilot = ({ activeBoard, onAddItem, onAddDocument }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const AiCopilot = ({ activeBoard, onAddItem, onAddDocument, isOpen: propIsOpen, onToggleOpen }) => {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = propIsOpen !== undefined ? propIsOpen : internalIsOpen;
+  const setIsOpen = (val) => {
+    const nextVal = typeof val === 'function' ? val(isOpen) : val;
+    if (onToggleOpen) onToggleOpen(nextVal);
+    setInternalIsOpen(nextVal);
+  };
   const [messages, setMessages] = useState([
     {
       sender: 'ai',
@@ -65,48 +71,26 @@ const AiCopilot = ({ activeBoard, onAddItem, onAddDocument }) => {
   };
 
   return (
-    <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9990 }}>
-      {/* Floating Toggle Trigger Button */}
+    <div className="ai-copilot-container">
+      {/* Floating Toggle Trigger Button (Hidden when open or on mobile bottom nav) */}
       {!isOpen && (
         <button
+          type="button"
           onClick={() => setIsOpen(true)}
-          style={{
-            background: 'linear-gradient(135deg, #0085ff 0%, #a259ff 100%)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '50px',
-            padding: '12px 20px',
-            boxShadow: '0 8px 30px rgba(0, 133, 255, 0.5)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontWeight: 700,
-            fontSize: '0.95rem',
-            transition: 'transform 0.2s, boxShadow 0.2s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+          className="ai-copilot-trigger"
+          aria-label="เปิด AI Copilot Assistant"
         >
           <FiZap size={18} />
-          <span>AI Copilot Assistant</span>
+          <span className="ai-copilot-trigger-text">AI Copilot Assistant</span>
         </button>
       )}
 
       {/* Expanded AI Panel */}
       {isOpen && (
         <div
-          style={{
-            width: '380px',
-            height: '520px',
-            background: '#1c2038',
-            border: '1px solid var(--border-color)',
-            borderRadius: '16px',
-            boxShadow: '0 12px 40px rgba(0,0,0,0.6)',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-          }}
+          className="ai-copilot-panel"
+          role="dialog"
+          aria-label="AI Copilot Assistant"
         >
           {/* Header */}
           <div style={{ padding: '0.85rem 1.25rem', background: 'linear-gradient(90deg, #1f2445 0%, #291c45 100%)', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

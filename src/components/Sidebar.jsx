@@ -243,18 +243,16 @@ const Sidebar = ({
             )}
           </div>
           
-          {hoveredId === board.id && (
-            <div style={{ display: 'flex', gap: '4px' }}>
-              {isFolder && (
-                <div className="sidebar-item-actions" onClick={(e) => openAddMenu(e, board.id)} title="Add to folder">
-                  <FiPlus size={16} />
-                </div>
-              )}
-              <div className="sidebar-item-actions" onClick={(e) => openActionMenu(e, board.id)} title="Options">
-                <FiMoreHorizontal size={16} />
+          <div className={`sidebar-item-actions-wrapper ${hoveredId === board.id ? 'hovered' : ''}`} style={{ gap: '4px' }}>
+            {isFolder && (
+              <div className="sidebar-item-actions" onClick={(e) => openAddMenu(e, board.id)} title="Add to folder">
+                <FiPlus size={16} />
               </div>
+            )}
+            <div className="sidebar-item-actions" onClick={(e) => openActionMenu(e, board.id)} title="Options">
+              <FiMoreHorizontal size={16} />
             </div>
-          )}
+          </div>
           
           {actionMenuId === board.id && (
             <div ref={actionMenuRef} className="add-menu-dropdown" style={{ zIndex: 1000, right: '10px', left: 'auto', top: '30px' }}>

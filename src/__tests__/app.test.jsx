@@ -358,4 +358,28 @@ describe('LightBeam OS - Complete Feature & Navigation Tests', () => {
       expect(screen.getByText(/จอเปิดตลอด \(Stay Awake\)|โหมดนำเสนอ/i)).toBeDefined();
     });
   });
+
+  it('tests Mobile Bottom Navigation Bar actions (Quick Add, AI toggle, My Work)', () => {
+    render(<App />);
+
+    // Check presence of Mobile Quick Navigation
+    const mobileNav = screen.getByRole('navigation', { name: /Mobile Quick Navigation/i });
+    expect(mobileNav).toBeDefined();
+
+    // 1. Click Quick Add item button
+    const quickAddBtn = screen.getByRole('button', { name: /เพิ่มงานใหม่ทันที/i });
+    fireEvent.click(quickAddBtn);
+    expect(screen.getAllByText('New Item').length).toBeGreaterThan(0);
+
+    // 2. Click AI Copilot button in mobile dock
+    const aiToggleBtn = screen.getByRole('button', { name: /เปิดผู้ช่วย AI Copilot/i });
+    fireEvent.click(aiToggleBtn);
+    expect(screen.getByRole('dialog', { name: /AI Copilot Assistant/i })).toBeDefined();
+
+    // 3. Click My Work button in mobile dock
+    const myWorkBtn = screen.getByRole('button', { name: /มุมมองงานของฉัน/i });
+    fireEvent.click(myWorkBtn);
+    expect(screen.getAllByText(/📋 My Work/i).length).toBeGreaterThan(0);
+  });
 });
+

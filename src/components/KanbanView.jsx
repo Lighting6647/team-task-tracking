@@ -43,15 +43,7 @@ const KanbanView = ({ board, updateItem, onOpenItem, addItem }) => {
   };
 
   return (
-    <div style={{ 
-      display: 'flex', 
-      gap: '1.5rem', 
-      padding: '2rem', 
-      height: '100%', 
-      overflowX: 'auto',
-      overflowY: 'hidden',
-      alignItems: 'flex-start'
-    }}>
+    <div className="kanban-container">
       {statusOptions.map(option => {
         const columnItems = allItems.filter(item => {
           const itemStatus = item[statusCol.id];
@@ -62,19 +54,7 @@ const KanbanView = ({ board, updateItem, onOpenItem, addItem }) => {
         return (
           <div 
             key={option.id} 
-            style={{
-              minWidth: '300px',
-              maxWidth: '300px',
-              background: 'rgba(29, 30, 47, 0.4)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '12px',
-              display: 'flex',
-              flexDirection: 'column',
-              maxHeight: '100%',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
-            }}
+            className="kanban-column"
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, option.id)}
           >

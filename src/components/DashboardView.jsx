@@ -112,7 +112,7 @@ const DashboardView = ({ board, allBoards, updateDashboard }) => {
         <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-color)' }}>
           <FiCpu style={{ color: 'var(--accent-purple)' }} /> AI Widget Creator
         </h3>
-        <form onSubmit={handleAIGenerate} style={{ display: 'flex', gap: '1rem' }}>
+        <form onSubmit={handleAIGenerate} className="dashboard-ai-form">
           <input 
             type="text" 
             value={aiPrompt}
@@ -125,7 +125,8 @@ const DashboardView = ({ board, allBoards, updateDashboard }) => {
           />
           <button type="submit" style={{ 
             background: 'var(--accent-purple)', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', 
-            borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem'
+            borderRadius: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
+            whiteSpace: 'nowrap'
           }}>
             ✨ Generate
           </button>
@@ -140,16 +141,12 @@ const DashboardView = ({ board, allBoards, updateDashboard }) => {
           <p>ลองพิมพ์คำสั่งให้ AI สร้างกราฟให้คุณดูสิ!</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '1.5rem' }}>
+        <div className="dashboard-widgets-grid">
           {widgets.map(widget => {
             const data = getWidgetData(widget);
             
             return (
-              <div key={widget.id} style={{ 
-                background: 'rgba(38, 40, 64, 0.65)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderRadius: '12px', padding: '1.5rem',
-                border: '1px solid rgba(255, 255, 255, 0.12)', display: 'flex', flexDirection: 'column',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.3)', height: '350px'
-              }}>
+              <div key={widget.id} className="dashboard-widget-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                   <h4 style={{ margin: 0, color: 'var(--text-color)' }}>{widget.title}</h4>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>

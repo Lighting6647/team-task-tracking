@@ -58,7 +58,7 @@ const MyWorkView = ({ boards, onSelectBoard, onOpenItem, updateItem }) => {
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+      <div className="my-work-kpi-grid">
         <div style={{ background: '#20243f', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '1.25rem' }}>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>งานทั้งหมด</div>
           <div style={{ fontSize: '1.75rem', fontWeight: 700 }}>{totalCount}</div>
@@ -85,7 +85,7 @@ const MyWorkView = ({ boards, onSelectBoard, onOpenItem, updateItem }) => {
 
       {/* Filter and Search Bar */}
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
           <FiSearch style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
             type="text"
@@ -104,7 +104,7 @@ const MyWorkView = ({ boards, onSelectBoard, onOpenItem, updateItem }) => {
           />
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '2px', maxWidth: '100%' }}>
           {['all', 'working', 'done', 'stuck'].map(st => (
             <button
               key={st}
@@ -117,7 +117,8 @@ const MyWorkView = ({ boards, onSelectBoard, onOpenItem, updateItem }) => {
                 color: '#fff',
                 fontSize: '0.85rem',
                 cursor: 'pointer',
-                fontWeight: filterStatus === st ? 600 : 400
+                fontWeight: filterStatus === st ? 600 : 400,
+                whiteSpace: 'nowrap'
               }}
             >
               {st === 'all' ? 'ทั้งหมด' : st === 'working' ? 'กำลังทำ' : st === 'done' ? 'เสร็จสิ้น' : 'ติดขัด'}
@@ -126,9 +127,10 @@ const MyWorkView = ({ boards, onSelectBoard, onOpenItem, updateItem }) => {
         </div>
       </div>
 
-      {/* Task List Table */}
-      <div style={{ background: '#20243f', border: '1px solid var(--border-color)', borderRadius: '10px', overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 1fr 1fr 50px', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', background: '#1c2038', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+      {/* Task List Table Container */}
+      <div className="my-work-table-container">
+        <div className="my-work-table-inner">
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 2fr) 1.2fr 1fr 1fr 1fr 50px', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', background: '#1c2038', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
           <div>ชื่องาน (Item)</div>
           <div>กระดาน / หมวดหมู่งาน</div>
           <div style={{ textAlign: 'center' }}>สถานะ (Status)</div>
@@ -202,6 +204,7 @@ const MyWorkView = ({ boards, onSelectBoard, onOpenItem, updateItem }) => {
             </div>
           ))
         )}
+        </div>
       </div>
     </div>
   );
