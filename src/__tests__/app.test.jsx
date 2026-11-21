@@ -53,7 +53,7 @@ describe('LightBeam OS - Complete Feature & Navigation Tests', () => {
     expect(screen.getByRole('tablist', { name: /Board view options/i })).toBeDefined();
   });
 
-  it('switches between all 5 Board View tabs: Table, Kanban, Timeline, Form, Presentation', () => {
+  it('switches between all 5 Board View tabs: Table, Kanban, Timeline, Form, Presentation', async () => {
     render(<App />);
 
     // 1. Kanban View
@@ -76,7 +76,7 @@ describe('LightBeam OS - Complete Feature & Navigation Tests', () => {
     const presentationTab = screen.getByRole('tab', { name: /Presentation/i });
     fireEvent.click(presentationTab);
     expect(presentationTab.getAttribute('aria-selected')).toBe('true');
-    expect(screen.getAllByText(/PowerPoint Mode/i).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/PowerPoint Mode/i)).length).toBeGreaterThan(0);
 
     // 5. Back to Main Table
     const tableTab = screen.getByRole('tab', { name: /Main table/i });
@@ -246,7 +246,7 @@ describe('LightBeam OS - Complete Feature & Navigation Tests', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('tests Navigation to Document Board and rich text view mode', () => {
+  it('tests Navigation to Document Board and rich text view mode', async () => {
     render(<App />);
 
     // Find Document Board in Sidebar
@@ -254,12 +254,12 @@ describe('LightBeam OS - Complete Feature & Navigation Tests', () => {
     fireEvent.click(docItem);
 
     // Document header elements appear
-    expect(screen.getAllByText(/Word/i).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/Word/i)).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/บันทึก/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/พิมพ์ \/ PDF/i)).toBeDefined();
   });
 
-  it('tests Navigation to Dashboard Board and summary charts', () => {
+  it('tests Navigation to Dashboard Board and summary charts', async () => {
     render(<App />);
 
     // Find Dashboard in Sidebar
@@ -267,7 +267,7 @@ describe('LightBeam OS - Complete Feature & Navigation Tests', () => {
     fireEvent.click(dashboardItem);
 
     // Dashboard widgets render
-    expect(screen.getByText(/สถานะงานในโปรเจกต์/i)).toBeDefined();
+    expect(await screen.findByText(/สถานะงานในโปรเจกต์/i)).toBeDefined();
     expect(screen.getByText(/AI Widget Creator/i)).toBeDefined();
   });
 

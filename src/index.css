@@ -1505,3 +1505,106 @@ button, a, [role="button"], .sidebar-menu-item, .board-tab, .chip, .toolbar-btn 
 }
 
 
+
+/* ===== Primary Icon Rail (2-column navigation, monday.com style) ===== */
+.primary-icon-rail {
+  width: 64px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  background-color: var(--bg-sidebar, var(--bg-main));
+  border-right: 1px solid var(--border-color);
+  overflow-y: auto;
+  z-index: 5;
+}
+
+.primary-icon-rail-top,
+.primary-icon-rail-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  width: 100%;
+}
+
+.rail-btn {
+  position: relative;
+  width: 54px;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.rail-btn:hover {
+  background-color: rgba(0, 115, 234, 0.1);
+  color: var(--text-primary, var(--text-main));
+}
+
+.rail-btn:active {
+  transform: scale(0.96);
+}
+
+.rail-btn:focus-visible {
+  outline: 2px solid #0073ea;
+  outline-offset: 1px;
+}
+
+.rail-btn.active {
+  background-color: rgba(0, 115, 234, 0.18);
+  color: #0073ea;
+}
+
+.rail-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.rail-divider {
+  width: 32px;
+  height: 1px;
+  margin: 0.3rem 0;
+  background-color: var(--border-color);
+}
+
+.rail-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background-color: #e2445c;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 1025px) {
+  .sidebar.collapsed {
+    display: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .primary-icon-rail {
+    display: none;
+  }
+}

@@ -6,7 +6,7 @@ const Sidebar = ({
   activeSpecialView, onSelectSpecialView, onResetToBlank,
   isOpen = true, onClose, onDuplicateBoard,
   workspaces = [], activeWorkspaceId = 'ws-main', onSelectWorkspace, onAddWorkspace,
-  onOpenGlobalSearch, onOpenTemplates, trashCount = 0
+  onOpenGlobalSearch, onOpenTemplates, trashCount = 0, collapsed = false
 }) => {
   const handleNavigate = (action) => {
     if (typeof action === 'function') action();
@@ -315,7 +315,7 @@ const Sidebar = ({
     .filter(b => !b.parentId || !boards.some(p => p.id === b.parentId));
 
   return (
-    <aside className={`sidebar ${isOpen ? 'open' : ''}`} aria-label="Main Navigation">
+    <aside className={`sidebar ${isOpen ? 'open' : ''} ${collapsed ? 'collapsed' : ''}`} aria-label="Main Navigation">
       {/* Sidebar Brand Header with Mobile Close Button */}
       <div className="sidebar-brand-header">
         <div className="sidebar-brand-badge">

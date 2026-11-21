@@ -2,30 +2,43 @@ import {
   FiMoreHorizontal, FiSearch, FiFilter, FiArrowDown, FiEyeOff, FiUsers, 
   FiSettings, FiMenu, FiSun, FiMoon, FiUpload, FiX, FiCopy, FiPrinter, FiLayers, FiPlus, FiCoffee 
 } from 'react-icons/fi';
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, Suspense, lazy } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import Sidebar from './components/Sidebar';
 import TableView from './components/TableView';
-import DashboardView from './components/DashboardView';
 import KanbanView from './components/KanbanView';
-import DocumentView from './components/DocumentView';
-import GanttView from './components/GanttView';
 import FormView from './components/FormView';
 import TaskDrawer from './components/TaskDrawer';
 import MyWorkView from './components/MyWorkView';
 import AiNotetakerView from './components/AiNotetakerView';
-import PresentationView from './components/PresentationView';
 import AiCopilot from './components/AiCopilot';
 import NotificationCenter from './components/NotificationCenter';
 import IntegrationsModal from './components/IntegrationsModal';
 import AutomationsModal from './components/AutomationsModal';
 import MobileBottomNav from './components/MobileBottomNav';
-import WorkspaceOverview from './components/WorkspaceOverview';
 import GlobalSearchModal from './components/GlobalSearchModal';
 import InboxView from './components/InboxView';
 import TemplateCenterModal from './components/TemplateCenterModal';
 import TrashArchiveView from './components/TrashArchiveView';
+import PrimaryIconRail from './components/PrimaryIconRail';
+import CloudSyncModal from './components/CloudSyncModal';
+import { ViewSkeleton, ViewErrorBoundary } from './components/ViewFallback';
 import { DEFAULT_WORKSPACES } from './utils/workspaceTemplates';
+import {
+  loadCloudConfig,
+  saveCloudConfig,
+  isCloudConfigured,
+  pushStateToCloud,
+  pullStateFromCloud,
+  getLastSyncTime,
+} from './utils/cloudSync';
+
+// Code Splitting: heavy views are loaded on demand (recharts, rich text, timeline)
+const DashboardView = lazy(() => import('./components/DashboardView'));
+const DocumentView = lazy(() => import('./components/DocumentView'));
+const GanttView = lazy(() => import('./components/GanttView'));
+const PresentationView = lazy(() => import('./components/PresentationView'));
+const WorkspaceOverview = lazy(() => import('./components/WorkspaceOverview'));
 import {
   createActivityEntry,
   loadAutomations,
@@ -309,6 +322,149 @@ const App = () => {
   );
 
   const trashCount = useMemo(() => boards.filter((b) => b.isDeleted).length, [boards]);
+
+  // ===== Primary Icon Rail: collapsible workspace sidebar (desktop) =====
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('tracking_sidebar_collapsed_v1') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tracking_sidebar_collapsed_v1', String(isSidebarCollapsed));
+    } catch {}
+  }, [isSidebarCollapsed]);
+
+  // ===== Cloud Sync (Supabase / PostgreSQL REST API) =====
+  const [cloudConfig, setCloudConfig] = useState(loadCloudConfig);
+  const [cloudSyncOpen, setCloudSyncOpen] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(() => (isCloudConfigured(loadCloudConfig()) ? 'syncing' : 'local'));
+  const [syncError, setSyncError] = useState('');
+  const [lastSyncedAt, setLastSyncedAt] = useState(getLastSyncTime);
+  const skipNextPushRef = useRef(false);
+  const lastRemoteUpdateRef = useRef(null);
+  const cloudReadyRef = useRef(false);
+
+  const applyRemotePayload = (payload, updatedAt) => {
+    if (!payload || typeof payload !== 'object') return false;
+    skipNextPushRef.current = true;
+    if (Array.isArray(payload.boards) && payload.boards.length > 0) setBoards(payload.boards);
+    if (Array.isArray(payload.workspaces) && payload.workspaces.length > 0) setWorkspaces(payload.workspaces);
+    if (Array.isArray(payload.automationRecipes)) setAutomationRecipes(payload.automationRecipes);
+    lastRemoteUpdateRef.current = updatedAt || new Date().toISOString();
+    setLastSyncedAt(lastRemoteUpdateRef.current);
+    return true;
+  };
+
+  const handlePullNow = async (configOverride) => {
+    const cfg = configOverride || cloudConfig;
+    if (!isCloudConfigured(cfg)) {
+      setSyncStatus('local');
+      return;
+    }
+    setSyncStatus('syncing');
+    setSyncError('');
+    try {
+      const res = await pullStateFromCloud(cfg);
+      if (res.payload) applyRemotePayload(res.payload, res.updatedAt);
+      setSyncStatus('synced');
+    } catch (err) {
+      setSyncStatus('error');
+      setSyncError(err.message || 'ไม่สามารถดึงข้อมูลจาก Cloud ได้');
+    } finally {
+      cloudReadyRef.current = true;
+    }
+  };
+
+  const handlePushNow = async (configOverride) => {
+    const cfg = configOverride || cloudConfig;
+    if (!isCloudConfigured(cfg)) {
+      setSyncStatus('local');
+      return;
+    }
+    setSyncStatus('syncing');
+    setSyncError('');
+    try {
+      const res = await pushStateToCloud(cfg, {
+        version: 1,
+        boards,
+        workspaces,
+        automationRecipes,
+      });
+      if (res.updatedAt) {
+        lastRemoteUpdateRef.current = res.updatedAt;
+        setLastSyncedAt(res.updatedAt);
+      }
+      setSyncStatus('synced');
+    } catch (err) {
+      setSyncStatus('error');
+      setSyncError(err.message || 'ไม่สามารถส่งข้อมูลขึ้น Cloud ได้');
+    }
+  };
+
+  const handleSaveCloudConfig = async (nextConfig) => {
+    setCloudConfig(nextConfig);
+    saveCloudConfig(nextConfig);
+    if (isCloudConfigured(nextConfig)) {
+      await handlePullNow(nextConfig);
+    } else {
+      setSyncStatus('local');
+      setSyncError('');
+    }
+  };
+
+  // Initial pull on load
+  useEffect(() => {
+    if (isCloudConfigured(cloudConfig)) {
+      handlePullNow();
+    } else {
+      cloudReadyRef.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Debounced auto-push when data changes
+  useEffect(() => {
+    if (!cloudReadyRef.current) return;
+    if (!isCloudConfigured(cloudConfig) || !cloudConfig.autoSync) return;
+    if (skipNextPushRef.current) {
+      skipNextPushRef.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      handlePushNow();
+    }, 1200);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boards, workspaces, automationRecipes, cloudConfig]);
+
+  // Near real-time polling: pull remote changes from other devices every 15s
+  useEffect(() => {
+    if (!isCloudConfigured(cloudConfig) || !cloudConfig.autoSync) return;
+    const interval = setInterval(async () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      try {
+        const res = await pullStateFromCloud(cloudConfig);
+        if (
+          res.payload &&
+          res.updatedAt &&
+          (!lastRemoteUpdateRef.current || new Date(res.updatedAt) > new Date(lastRemoteUpdateRef.current))
+        ) {
+          applyRemotePayload(res.payload, res.updatedAt);
+        }
+        setSyncStatus('synced');
+        setSyncError('');
+      } catch (err) {
+        setSyncStatus('error');
+        setSyncError(err.message || 'การเชื่อมต่อ Cloud ขัดข้อง');
+      }
+    }, 15000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloudConfig]);
 
   useEffect(() => {
     saveAutomations(automationRecipes);
@@ -1245,7 +1401,25 @@ const App = () => {
           />
         )}
 
+        <PrimaryIconRail
+          activeSpecialView={activeSpecialView}
+          isSidebarCollapsed={isSidebarCollapsed}
+          onToggleSidebarCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+          onSelectHome={() => {
+            setActiveSpecialView(null);
+            const target = visibleWorkspaceBoards.find((b) => b.id === activeBoardId) || visibleWorkspaceBoards.find((b) => b.type === 'grid');
+            if (target) setActiveBoardId(target.id);
+          }}
+          onSelectSpecialView={(view) => setActiveSpecialView(view)}
+          onOpenTemplates={() => setTemplateModalOpen(true)}
+          onOpenGlobalSearch={() => setGlobalSearchOpen(true)}
+          onOpenCloudSync={() => setCloudSyncOpen(true)}
+          syncStatus={syncStatus}
+          trashCount={trashCount}
+        />
+
         <Sidebar 
+          collapsed={isSidebarCollapsed}
           boards={visibleWorkspaceBoards}
           activeBoardId={activeBoardId}
           isOpen={isSidebarOpen}
@@ -1297,6 +1471,8 @@ const App = () => {
         />
         
         <main id="main-board-content" role="main" tabIndex={-1} className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)', overflow: 'hidden' }}>
+          <ViewErrorBoundary>
+          <Suspense fallback={<ViewSkeleton />}>
           {activeSpecialView === 'workspace-overview' ? (
             <WorkspaceOverview
               workspace={activeWorkspace}
@@ -1671,19 +1847,21 @@ const App = () => {
                   />
                 )}
                 {activeBoard.type === 'grid' && viewType === 'kanban' && <KanbanView board={activeBoard} updateItem={handleUpdateItem} addItem={handleAddItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} />}
-                {activeBoard.type === 'grid' && viewType === 'gantt' && <GanttView board={activeBoard} updateItem={handleUpdateItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} />}
+                {activeBoard.type === 'grid' && viewType === 'gantt' && <Suspense fallback={<ViewSkeleton label="กำลังโหลด Timeline..." />}><GanttView board={activeBoard} updateItem={handleUpdateItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} /></Suspense>}
                 {activeBoard.type === 'grid' && viewType === 'form' && <FormView board={activeBoard} addItem={handleAddItem} updateItem={handleUpdateItem} />}
-                {activeBoard.type === 'grid' && viewType === 'presentation' && <PresentationView board={activeBoard} />}
-                {activeBoard.type === 'doc' && <DocumentView board={activeBoard} updateDocument={handleUpdateDocument} onClose={() => {
+                {activeBoard.type === 'grid' && viewType === 'presentation' && <Suspense fallback={<ViewSkeleton label="กำลังโหลด Presentation..." />}><PresentationView board={activeBoard} /></Suspense>}
+                {activeBoard.type === 'doc' && <Suspense fallback={<ViewSkeleton label="กำลังโหลดเอกสาร..." />}><DocumentView board={activeBoard} updateDocument={handleUpdateDocument} onClose={() => {
                   const firstGrid = boards.find(b => b.type === 'grid');
                   if (firstGrid) setActiveBoardId(firstGrid.id);
-                }} />}
+                }} /></Suspense>}
                 {activeBoard.type === 'dashboard' && (
+                  <Suspense fallback={<ViewSkeleton label="กำลังโหลดแดชบอร์ด..." />}>
                   <DashboardView 
                     board={activeBoard} 
                     allBoards={boards} 
                     updateDashboard={handleUpdateDashboard} 
                   />
+                  </Suspense>
                 )}
               </div>
             </>
@@ -1692,6 +1870,8 @@ const App = () => {
               Select a board to view
             </div>
           )}
+          </Suspense>
+          </ViewErrorBoundary>
         </main>
       </div>
 
@@ -1760,6 +1940,20 @@ const App = () => {
         onClose={() => setTemplateModalOpen(false)}
         onUseTemplate={handleUseTemplate}
       />
+
+      {cloudSyncOpen && (
+        <CloudSyncModal
+          isOpen={cloudSyncOpen}
+          onClose={() => setCloudSyncOpen(false)}
+          config={cloudConfig}
+          syncStatus={syncStatus}
+          syncError={syncError}
+          lastSyncedAt={lastSyncedAt}
+          onSaveConfig={handleSaveCloudConfig}
+          onPushNow={() => handlePushNow()}
+          onPullNow={() => handlePullNow()}
+        />
+      )}
 
       <MobileBottomNav 
         activeBoard={activeBoard}
