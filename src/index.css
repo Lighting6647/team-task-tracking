@@ -661,9 +661,10 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
   display: flex;
   gap: 1rem;
   border-bottom: 1px solid var(--border-color);
-  overflow-x: auto;
-  white-space: nowrap;
-  flex-wrap: nowrap;
+  overflow: visible;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 30;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   margin-bottom: 1rem;
@@ -701,9 +702,10 @@ input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); curso
   align-items: center;
   gap: 0.65rem;
   background-color: var(--bg-main);
-  overflow-x: auto;
-  white-space: nowrap;
-  flex-wrap: nowrap;
+  overflow: visible;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 30;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -1514,7 +1516,7 @@ button, a, [role="button"], .sidebar-menu-item, .board-tab, .chip, .toolbar-btn 
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 0.6rem 0;
+  padding: 0.35rem 0;
   background-color: var(--bg-sidebar, var(--bg-main));
   border-right: 1px solid var(--border-color);
   overflow-y: auto;
@@ -1533,7 +1535,7 @@ button, a, [role="button"], .sidebar-menu-item, .board-tab, .chip, .toolbar-btn 
 .rail-btn {
   position: relative;
   width: 54px;
-  min-height: 50px;
+  min-height: 40px;
   display: flex;
   flex-direction: column;
   align-items: center;
