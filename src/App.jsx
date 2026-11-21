@@ -21,6 +21,7 @@ import InboxView from './components/InboxView';
 import TemplateCenterModal from './components/TemplateCenterModal';
 import TrashArchiveView from './components/TrashArchiveView';
 import PrimaryIconRail from './components/PrimaryIconRail';
+import GlobalTopBar from './components/GlobalTopBar';
 import CloudSyncModal from './components/CloudSyncModal';
 import AuthPermissionsModal from './components/AuthPermissionsModal';
 import { ViewSkeleton, ViewErrorBoundary } from './components/ViewFallback';
@@ -252,7 +253,13 @@ const App = () => {
   const [activeBoardId, setActiveBoardId] = useState('board-passapp-1');
   const [activeSpecialView, setActiveSpecialView] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem('tracking_theme_v1') || 'light';
+    } catch {
+      return 'light';
+    }
+  });
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [automationsOpen, setAutomationsOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(
@@ -1351,11 +1358,31 @@ const App = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', height: '100dvh', maxHeight: '100dvh', backgroundColor: 'var(--bg-main)' }}>
+    <div className="work-os-shell" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', height: '100dvh', maxHeight: '100dvh', backgroundColor: 'var(--bg-shell)' }}>
       {/* WCAG 2.4.1 Skip to Main Content Link */}
       <a href="#main-board-content" className="skip-to-content">
         ข้ามไปยังเนื้อหาหลัก (Skip to main content)
       </a>
+
+      {/* Desktop Global Top Bar (monday.com 3-zone header) */}
+      <GlobalTopBar
+        theme={theme}
+        onToggleTheme={() => {
+          const next = theme === 'dark' ? 'light' : 'dark';
+          setTheme(next);
+          try { localStorage.setItem('tracking_theme_v1', next); } catch {}
+        }}
+        notifications={notifications}
+        onMarkAllNotificationsRead={handleMarkAllNotificationsRead}
+        onOpenGlobalSearch={() => setGlobalSearchOpen(true)}
+        onOpenInbox={() => setActiveSpecialView('inbox')}
+        onOpenWorkspaceOverview={() => setActiveSpecialView('workspace-overview')}
+        onOpenAuth={() => setAuthModalOpen(true)}
+        onOpenCloudSync={() => setCloudSyncOpen(true)}
+        onToggleAiCopilot={() => setIsAiCopilotOpen((prev) => !prev)}
+        currentUser={currentUser}
+        syncStatus={syncStatus}
+      />
 
       {/* Screen Reader Live Status Region */}
       <div 

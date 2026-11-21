@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap');
 
 :root {
   color-scheme: dark;
@@ -1605,6 +1605,217 @@ button, a, [role="button"], .sidebar-menu-item, .board-tab, .chip, .toolbar-btn 
 
 @media (max-width: 1024px) {
   .primary-icon-rail {
+    display: none;
+  }
+}
+
+/* ===== Work OS Authentic 3-Zone Interface (Light default + Dark support) ===== */
+:root {
+  --bg-shell: #131629;
+  --bg-secondary: #222640;
+  --text-primary: #FFFFFF;
+}
+
+[data-theme="light"] {
+  --bg-shell: #eceff8;
+  --bg-main: #ffffff;
+  --bg-secondary: #f6f7fb;
+  --bg-sidebar: #ffffff;
+  --bg-panel: #ffffff;
+  --bg-hover: rgba(0, 115, 234, 0.06);
+  --bg-active: #cce5ff;
+  --bg-table-header: #f6f7fb;
+  --bg-table-row: #ffffff;
+  --bg-table-row-hover: #f5f6f8;
+  --border-color: #e6e9ef;
+  --border-subtle: #eff1f5;
+  --text-primary: #323338;
+  --text-main: #323338;
+  --text-muted: #676879;
+}
+
+body {
+  font-family: 'Figtree', 'Noto Sans Thai', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.global-top-bar {
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  background-color: var(--bg-shell);
+  color: var(--text-primary);
+  gap: 12px;
+  z-index: 20;
+}
+
+.global-top-bar-left,
+.global-top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.global-brand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.global-brand-btn:hover {
+  background-color: var(--bg-hover);
+}
+
+.global-brand-mark {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 16px;
+}
+
+.global-brand-mark span {
+  width: 5px;
+  height: 14px;
+  border-radius: 999px;
+  transform: skewX(-16deg);
+}
+
+.global-brand-mark span:last-child {
+  height: 7px;
+  border-radius: 50%;
+  transform: none;
+}
+
+.global-brand-text {
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: -0.01em;
+}
+
+.global-top-bar-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  max-width: 440px;
+}
+
+.global-search-pill {
+  width: 100%;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-color: rgba(103, 104, 121, 0.12);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.global-search-pill:hover {
+  background-color: rgba(103, 104, 121, 0.18);
+  border-color: var(--border-color);
+}
+
+.global-search-placeholder {
+  flex: 1;
+  text-align: left;
+}
+
+.global-search-kbd {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background-color: var(--bg-main);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+.global-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.global-icon-btn:hover {
+  background-color: var(--bg-hover);
+}
+
+.global-avatar-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-main);
+  background-color: #323338;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: 2px;
+}
+
+@media (min-width: 1025px) {
+  .primary-icon-rail {
+    background-color: var(--bg-shell);
+    border-right: none;
+  }
+
+  .work-os-shell .sidebar {
+    border-top-left-radius: 10px;
+    border-top: 1px solid var(--border-color);
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    background-color: var(--bg-sidebar);
+  }
+
+  .work-os-shell .sidebar-brand-header {
+    display: none;
+  }
+
+  .work-os-shell .main-content {
+    border-top-left-radius: 10px;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--bg-main);
+    box-shadow: -2px 0 12px rgba(50, 51, 56, 0.04);
+  }
+
+  [data-theme="light"] .sidebar-menu-item.active {
+    background-color: #cce5ff;
+    color: #0073ea;
+    font-weight: 600;
+  }
+
+  [data-theme="light"] .rail-btn.active {
+    background-color: #cce5ff;
+    color: #0073ea;
+  }
+}
+
+@media (max-width: 1024px) {
+  .global-top-bar {
     display: none;
   }
 }

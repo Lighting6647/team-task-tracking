@@ -21,16 +21,16 @@ describe('LightBeam OS - Complete Feature & Navigation Tests', () => {
     const themeBtn = screen.getByTitle(/สลับธีม สว่าง \/ มืด/i);
     expect(themeBtn).toBeDefined();
     
-    // Initial theme is dark
-    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
-
-    // Click to toggle to light
-    fireEvent.click(themeBtn);
+    // Initial theme is light (monday.com default)
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
 
-    // Click to toggle back to dark
+    // Click to toggle to dark
     fireEvent.click(themeBtn);
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+
+    // Click to toggle back to light
+    fireEvent.click(themeBtn);
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
   });
 
   it('navigates through all Sidebar special views: My Work, AI Notetaker, and Home', () => {
