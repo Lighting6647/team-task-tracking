@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiChevronDown, FiPlus, FiTrash2, FiExternalLink, FiStar } from 'react-icons/fi';
+import { FiChevronDown, FiPlus, FiTrash2, FiExternalLink, FiStar, FiPlay, FiPause, FiRotateCcw } from 'react-icons/fi';
 import StatusDropdown from './StatusDropdown';
+import { evaluateFormula, formatDuration, getElapsedSeconds } from '../utils/formulaEngine';
 
 const TableView = ({ 
   board,
@@ -45,7 +46,20 @@ const TableView = ({
   const [openColumnMenuGroupId, setOpenColumnMenuGroupId] = useState(null);
   const [resizingCol, setResizingCol] = useState(null);
   const [hoveredItemId, setHoveredItemId] = useState(null);
+  const [nowTick, setNowTick] = useState(() => Date.now());
   const tableContainerRef = useRef(null);
+
+  const hasRunningTimer = groups.some((g) =>
+    (g.items || []).some((it) =>
+      columns.some((c) => c.type === 'time_tracking' && it[c.id]?.runningSince)
+    )
+  );
+
+  useEffect(() => {
+    if (!hasRunningTimer) return;
+    const id = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [hasRunningTimer]);
 
   const toggleSelection = (groupId, itemId, parentId = null) => {
     setSelectedItems(prev => {
@@ -468,6 +482,94 @@ const TableView = ({
           </div>
         );
       }
+      case 'formula': {
+        const expr = item[`${col.id}_formula`] || col.formula || '{budget} * 1.07';
+        const computed = evaluateFormula(expr, item, columns);
+        return (
+          <div className="cell-content" style={{ justifyContent: 'space-between', padding: '0 8px', gap: '4px' }}>
+            <span style={{ fontWeight: 700, color: '#00c875', fontSize: '0.84rem' }} title={`สูตร: ${expr}`}>
+              {computed}
+            </span>
+            <button
+              type="button"
+              title="ตั้งสูตรคำนวณ (เช่น {budget} * 1.07 หรือ SUM({a},{b}))"
+              onClick={(e) => {
+                e.stopPropagation();
+                const next = window.prompt('ใส่สูตรคำนวณ (อ้างอิงคอลัมน์ด้วย {ชื่อหรือรหัสคอลัมน์}):', expr);
+                if (next !== null) {
+                  updateItem(group.id, item.id, `${col.id}_formula`, next.trim(), parentId);
+                }
+              }}
+              style={{
+                background: 'rgba(0,115,234,0.14)',
+                color: '#579bfc',
+                border: 'none',
+                borderRadius: '4px',
+                padding: '1px 5px',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              fx
+            </button>
+          </div>
+        );
+      }
+      case 'time_tracking': {
+        const tv = item[col.id] && typeof item[col.id] === 'object' ? item[col.id] : { seconds: 0, runningSince: null };
+        const isRunning = Boolean(tv.runningSince);
+        const totalSec = getElapsedSeconds(tv, nowTick);
+        const toggleTimer = (e) => {
+          e.stopPropagation();
+          if (isRunning) {
+            updateItem(group.id, item.id, col.id, { seconds: getElapsedSeconds(tv, Date.now()), runningSince: null }, parentId);
+          } else {
+            updateItem(group.id, item.id, col.id, { seconds: tv.seconds || 0, runningSince: Date.now() }, parentId);
+          }
+        };
+        const resetTimer = (e) => {
+          e.stopPropagation();
+          updateItem(group.id, item.id, col.id, { seconds: 0, runningSince: null }, parentId);
+        };
+        return (
+          <div className="cell-content" style={{ justifyContent: 'center', gap: '6px', padding: '0 6px' }}>
+            <button
+              type="button"
+              onClick={toggleTimer}
+              aria-label={isRunning ? 'Pause timer' : 'Start timer'}
+              title={isRunning ? 'หยุดจับเวลา' : 'เริ่มจับเวลา'}
+              style={{
+                width: '22px',
+                height: '22px',
+                borderRadius: '50%',
+                border: 'none',
+                backgroundColor: isRunning ? '#e2445c' : '#0073ea',
+                color: '#fff',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              {isRunning ? <FiPause size={11} /> : <FiPlay size={11} />}
+            </button>
+            <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', fontWeight: 600, color: isRunning ? '#00c875' : 'var(--text-primary)' }}>
+              {formatDuration(totalSec)}
+            </span>
+            {totalSec > 0 && !isRunning && (
+              <button
+                type="button"
+                onClick={resetTimer}
+                title="รีเซ็ตเวลา"
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}
+              >
+                <FiRotateCcw size={11} />
+              </button>
+            )}
+          </div>
+        );
+      }
       case 'text':
       default:
         return (
@@ -591,6 +693,8 @@ const TableView = ({
                       <div className="popover-option" onClick={() => handleAddNewColumn('rating', 'Rating')}>⭐ Rating</div>
                       <div className="popover-option" onClick={() => handleAddNewColumn('connect_boards', 'Connect Boards')}>🔗 Connect Boards</div>
                       <div className="popover-option" onClick={() => handleAddNewColumn('mirror', 'Mirror')}>🪞 Mirror</div>
+                      <div className="popover-option" onClick={() => handleAddNewColumn('formula', 'Formula')}>🧮 Formula (fx)</div>
+                      <div className="popover-option" onClick={() => handleAddNewColumn('time_tracking', 'Time Tracking')}>⏱️ Time Tracking</div>
                     </div>
                   )}
                 </th>

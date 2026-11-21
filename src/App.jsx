@@ -22,8 +22,10 @@ import TemplateCenterModal from './components/TemplateCenterModal';
 import TrashArchiveView from './components/TrashArchiveView';
 import PrimaryIconRail from './components/PrimaryIconRail';
 import CloudSyncModal from './components/CloudSyncModal';
+import AuthPermissionsModal from './components/AuthPermissionsModal';
 import { ViewSkeleton, ViewErrorBoundary } from './components/ViewFallback';
 import { DEFAULT_WORKSPACES } from './utils/workspaceTemplates';
+import { loadCurrentUser, saveCurrentUser, getPermissions } from './utils/authPermissions';
 import {
   loadCloudConfig,
   saveCloudConfig,
@@ -33,10 +35,11 @@ import {
   getLastSyncTime,
 } from './utils/cloudSync';
 
-// Code Splitting: heavy views are loaded on demand (recharts, rich text, timeline)
+// Code Splitting: heavy views are loaded on demand (recharts, rich text, timeline, calendar)
 const DashboardView = lazy(() => import('./components/DashboardView'));
 const DocumentView = lazy(() => import('./components/DocumentView'));
 const GanttView = lazy(() => import('./components/GanttView'));
+const CalendarView = lazy(() => import('./components/CalendarView'));
 const PresentationView = lazy(() => import('./components/PresentationView'));
 const WorkspaceOverview = lazy(() => import('./components/WorkspaceOverview'));
 import {
@@ -278,7 +281,26 @@ const App = () => {
   });
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState(loadCurrentUser);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const permissions = useMemo(() => getPermissions(currentUser?.role), [currentUser]);
   const fileInputRef = React.useRef(null);
+
+  const handleUpdateUser = (nextUser) => {
+    setCurrentUser(nextUser);
+    saveCurrentUser(nextUser);
+  };
+
+  const handleUpdateMemberRole = (wsId, memberId, nextRole) => {
+    if (!permissions.canManagePermissions) return;
+    setWorkspaces((prev) =>
+      prev.map((w) =>
+        w.id === wsId
+          ? { ...w, members: (w.members || []).map((m) => (m.id === memberId ? { ...m, role: nextRole } : m)) }
+          : w
+      )
+    );
+  };
 
   useEffect(() => {
     try {
@@ -1414,6 +1436,8 @@ const App = () => {
           onOpenTemplates={() => setTemplateModalOpen(true)}
           onOpenGlobalSearch={() => setGlobalSearchOpen(true)}
           onOpenCloudSync={() => setCloudSyncOpen(true)}
+          onOpenAuth={() => setAuthModalOpen(true)}
+          currentUser={currentUser}
           syncStatus={syncStatus}
           trashCount={trashCount}
         />
@@ -1471,6 +1495,31 @@ const App = () => {
         />
         
         <main id="main-board-content" role="main" tabIndex={-1} className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)', overflow: 'hidden' }}>
+          {permissions.isReadOnly && (
+            <div
+              role="note"
+              style={{
+                padding: '0.4rem 1rem',
+                backgroundColor: 'rgba(253, 171, 61, 0.16)',
+                borderBottom: '1px solid rgba(253, 171, 61, 0.4)',
+                color: '#fdab3d',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <span>โหมดดูอย่างเดียว (Viewer — Read-only) — คุณสามารถดูและค้นหาได้ แต่ไม่สามารถแก้ไขบอร์ดได้</span>
+              <button
+                type="button"
+                onClick={() => setAuthModalOpen(true)}
+                style={{ background: 'none', border: '1px solid #fdab3d', color: '#fdab3d', borderRadius: '6px', padding: '2px 8px', fontSize: '0.75rem', cursor: 'pointer' }}
+              >
+                เปลี่ยนสิทธิ์
+              </button>
+            </div>
+          )}
           <ViewErrorBoundary>
           <Suspense fallback={<ViewSkeleton />}>
           {activeSpecialView === 'workspace-overview' ? (
@@ -1487,6 +1536,8 @@ const App = () => {
               onOpenTemplates={() => setTemplateModalOpen(true)}
               onUpdateWorkspace={handleUpdateWorkspace}
               onAddMember={handleAddWorkspaceMember}
+              currentUser={currentUser}
+              onUpdateMemberRole={handleUpdateMemberRole}
             />
           ) : activeSpecialView === 'inbox' ? (
             <InboxView
@@ -1598,6 +1649,7 @@ const App = () => {
                     <button type="button" role="tab" aria-selected={viewType === 'table'} className={`board-tab ${viewType === 'table' ? 'active' : ''}`} onClick={() => setViewType('table')}>Main table</button>
                     <button type="button" role="tab" aria-selected={viewType === 'kanban'} className={`board-tab ${viewType === 'kanban' ? 'active' : ''}`} onClick={() => setViewType('kanban')}>Kanban</button>
                     <button type="button" role="tab" aria-selected={viewType === 'gantt'} className={`board-tab ${viewType === 'gantt' ? 'active' : ''}`} onClick={() => setViewType('gantt')}>Timeline</button>
+                    <button type="button" role="tab" aria-selected={viewType === 'calendar'} className={`board-tab ${viewType === 'calendar' ? 'active' : ''}`} onClick={() => setViewType('calendar')}>Calendar</button>
                     <button type="button" role="tab" aria-selected={viewType === 'form'} className={`board-tab ${viewType === 'form' ? 'active' : ''}`} onClick={() => setViewType('form')}>Form</button>
                     <button type="button" role="tab" aria-selected={viewType === 'presentation'} className={`board-tab ${viewType === 'presentation' ? 'active' : ''}`} onClick={() => setViewType('presentation')}>Presentation 🖥️</button>
                   </nav>
@@ -1848,6 +1900,7 @@ const App = () => {
                 )}
                 {activeBoard.type === 'grid' && viewType === 'kanban' && <KanbanView board={activeBoard} updateItem={handleUpdateItem} addItem={handleAddItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} />}
                 {activeBoard.type === 'grid' && viewType === 'gantt' && <Suspense fallback={<ViewSkeleton label="กำลังโหลด Timeline..." />}><GanttView board={activeBoard} updateItem={handleUpdateItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} /></Suspense>}
+                {activeBoard.type === 'grid' && viewType === 'calendar' && <Suspense fallback={<ViewSkeleton label="กำลังโหลดปฏิทิน..." />}><CalendarView board={activeBoard} updateItem={handleUpdateItem} addItem={handleAddItem} readOnly={permissions.isReadOnly} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} /></Suspense>}
                 {activeBoard.type === 'grid' && viewType === 'form' && <FormView board={activeBoard} addItem={handleAddItem} updateItem={handleUpdateItem} />}
                 {activeBoard.type === 'grid' && viewType === 'presentation' && <Suspense fallback={<ViewSkeleton label="กำลังโหลด Presentation..." />}><PresentationView board={activeBoard} /></Suspense>}
                 {activeBoard.type === 'doc' && <Suspense fallback={<ViewSkeleton label="กำลังโหลดเอกสาร..." />}><DocumentView board={activeBoard} updateDocument={handleUpdateDocument} onClose={() => {
@@ -1952,6 +2005,18 @@ const App = () => {
           onSaveConfig={handleSaveCloudConfig}
           onPushNow={() => handlePushNow()}
           onPullNow={() => handlePullNow()}
+        />
+      )}
+
+      {authModalOpen && (
+        <AuthPermissionsModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          currentUser={currentUser}
+          workspace={activeWorkspace}
+          cloudConfig={cloudConfig}
+          onUpdateUser={handleUpdateUser}
+          onUpdateMemberRole={handleUpdateMemberRole}
         />
       )}
 

@@ -13,6 +13,7 @@ import {
   FiLock,
   FiEdit2,
   FiCheck,
+  FiShield,
 } from 'react-icons/fi';
 
 const WorkspaceOverview = ({
@@ -24,6 +25,8 @@ const WorkspaceOverview = ({
   onOpenTemplates,
   onUpdateWorkspace,
   onAddMember,
+  currentUser,
+  onUpdateMemberRole,
 }) => {
   const [activeTab, setActiveTab] = useState('recents');
   const [editingDesc, setEditingDesc] = useState(false);
@@ -194,6 +197,7 @@ const WorkspaceOverview = ({
             { id: 'recents', label: 'Recents', icon: <FiClock size={14} /> },
             { id: 'content', label: `Content (${nonFolderBoards.length})`, icon: <FiLayers size={14} /> },
             { id: 'collaborators', label: `Collaborators (${workspace.members?.length || 1})`, icon: <FiUsers size={14} /> },
+            { id: 'permissions', label: 'Permissions', icon: <FiShield size={14} /> },
           ].map((tab) => {
             const active = activeTab === tab.id;
             return (
@@ -431,6 +435,54 @@ const WorkspaceOverview = ({
                   <span style={{ fontSize: '0.76rem', padding: '0.2rem 0.55rem', borderRadius: '6px', backgroundColor: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
                     {member.role}
                   </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Permissions */}
+        {activeTab === 'permissions' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ padding: '1rem 1.15rem', borderRadius: '10px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)', fontSize: '0.86rem' }}>
+              <strong>สิทธิ์ของคุณปัจจุบัน:</strong>{' '}
+              <span style={{ color: '#0073ea', fontWeight: 700 }}>{currentUser?.role || 'Owner'}</span>{' '}
+              ({currentUser?.role === 'Owner' ? 'จัดการสิทธิ์สมาชิกและลบ/แก้ไขได้ทั้งหมด' : currentUser?.role === 'Member' ? 'สร้างและแก้ไขงานได้ แต่ปรับสิทธิ์สมาชิกไม่ได้' : 'ดูข้อมูลอย่างเดียว (Read-only)'})
+            </div>
+
+            <div style={{ border: '1px solid var(--border-color)', borderRadius: '10px', overflow: 'hidden', backgroundColor: 'var(--bg-secondary)' }}>
+              {(workspace.members || []).map((member, idx) => (
+                <div
+                  key={member.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.85rem 1.1rem',
+                    borderBottom: idx < workspace.members.length - 1 ? '1px solid var(--border-color)' : 'none',
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{member.name}</div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{member.email}</div>
+                  </div>
+                  <select
+                    value={member.role || 'Member'}
+                    disabled={(currentUser?.role || 'Owner') !== 'Owner'}
+                    onChange={(e) => onUpdateMemberRole && onUpdateMemberRole(workspace.id, member.id, e.target.value)}
+                    style={{
+                      padding: '0.35rem 0.65rem',
+                      borderRadius: '6px',
+                      border: '1px solid var(--border-color)',
+                      backgroundColor: 'var(--bg-main)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.82rem',
+                    }}
+                  >
+                    <option value="Owner">Owner</option>
+                    <option value="Member">Member</option>
+                    <option value="Viewer">Viewer</option>
+                  </select>
                 </div>
               ))}
             </div>

@@ -11,6 +11,7 @@ import {
   FiCloud,
   FiChevronsLeft,
   FiChevronsRight,
+  FiShield,
 } from 'react-icons/fi';
 
 const PrimaryIconRail = ({
@@ -22,6 +23,8 @@ const PrimaryIconRail = ({
   onOpenTemplates,
   onOpenGlobalSearch,
   onOpenCloudSync,
+  onOpenAuth,
+  currentUser,
   syncStatus = 'local',
   trashCount = 0,
 }) => {
@@ -146,6 +149,19 @@ const PrimaryIconRail = ({
             }}
           />
         </button>
+
+        {onOpenAuth && (
+          <button
+            type="button"
+            className="rail-btn"
+            onClick={onOpenAuth}
+            title={`บัญชีผู้ใช้: ${currentUser?.name || 'User'} (${currentUser?.role || 'Owner'})`}
+            aria-label="User Login and Permissions"
+          >
+            <FiShield size={17} color={currentUser?.role === 'Viewer' ? '#fdab3d' : '#00c875'} />
+            <span className="rail-label">{currentUser?.role || 'Owner'}</span>
+          </button>
+        )}
 
         <button
           type="button"
