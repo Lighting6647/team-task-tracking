@@ -24,6 +24,7 @@ import PrimaryIconRail from './components/PrimaryIconRail';
 import GlobalTopBar from './components/GlobalTopBar';
 import CloudSyncModal from './components/CloudSyncModal';
 import AuthPermissionsModal from './components/AuthPermissionsModal';
+import ImportBoardModal from './components/ImportBoardModal';
 import { ViewSkeleton, ViewErrorBoundary } from './components/ViewFallback';
 import { DEFAULT_WORKSPACES } from './utils/workspaceTemplates';
 import { loadCurrentUser, saveCurrentUser, getPermissions } from './utils/authPermissions';
@@ -288,6 +289,7 @@ const App = () => {
   });
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(loadCurrentUser);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const permissions = useMemo(() => getPermissions(currentUser?.role), [currentUser]);
@@ -877,6 +879,14 @@ const App = () => {
     setActiveSpecialView(null);
     setActiveBoardId(built.id);
     trackRecentBoard(built.id);
+  };
+
+  const handleImportBoard = (importedBoard) => {
+    if (!importedBoard) return;
+    setBoards((prev) => [...prev, importedBoard]);
+    setActiveSpecialView(null);
+    setActiveBoardId(importedBoard.id);
+    trackRecentBoard(importedBoard.id);
   };
 
   const handleAddWorkspace = (name) => {
@@ -1497,6 +1507,7 @@ const App = () => {
           onAddWorkspace={handleAddWorkspace}
           onOpenGlobalSearch={() => setGlobalSearchOpen(true)}
           onOpenTemplates={() => setTemplateModalOpen(true)}
+          onOpenImportBoard={() => setImportModalOpen(true)}
           trashCount={trashCount}
           onResetToBlank={() => {
             const blankBoard = {
@@ -1561,6 +1572,7 @@ const App = () => {
               }}
               onAddBoard={handleAddBoard}
               onOpenTemplates={() => setTemplateModalOpen(true)}
+              onOpenImportBoard={() => setImportModalOpen(true)}
               onUpdateWorkspace={handleUpdateWorkspace}
               onAddMember={handleAddWorkspaceMember}
               currentUser={currentUser}
@@ -2044,6 +2056,15 @@ const App = () => {
           cloudConfig={cloudConfig}
           onUpdateUser={handleUpdateUser}
           onUpdateMemberRole={handleUpdateMemberRole}
+        />
+      )}
+
+      {importModalOpen && (
+        <ImportBoardModal
+          isOpen={importModalOpen}
+          onClose={() => setImportModalOpen(false)}
+          workspaceId={activeWorkspaceId}
+          onImportBoard={handleImportBoard}
         />
       )}
 

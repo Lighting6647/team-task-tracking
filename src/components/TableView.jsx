@@ -199,8 +199,8 @@ const TableView = ({
 
       const donePct = Math.round(((counts.done || 0) / group.items.length) * 100);
       return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-          <div style={{ display: 'flex', height: '8px', borderRadius: '4px', overflow: 'hidden', width: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }} aria-label="Status battery summary">
+          <div style={{ display: 'flex', height: '14px', borderRadius: '4px', overflow: 'hidden', width: '100%', backgroundColor: 'rgba(148,163,184,0.18)' }}>
             {(col.options || []).map(opt => {
               const count = counts[opt.id] || 0;
               if (count === 0) return null;
@@ -208,8 +208,8 @@ const TableView = ({
               return (
                 <div
                   key={opt.id}
-                  style={{ width: `${percentage}%`, background: opt.color }}
-                  title={`${opt.label}: ${count} (${Math.round(percentage)}%)`}
+                  style={{ width: `${percentage}%`, background: opt.color, transition: 'width 0.2s ease' }}
+                  title={`${opt.label || opt.id}: ${count} (${Math.round(percentage)}%)`}
                 />
               );
             })}
@@ -229,8 +229,53 @@ const TableView = ({
         return acc + (isNaN(val) ? 0 : val);
       }, 0);
       return (
-        <div style={{ textAlign: 'center', fontWeight: 600, color: 'var(--text-main)', fontSize: '0.85rem' }}>
+        <div style={{ textAlign: 'center', fontWeight: 700, color: 'var(--text-main)', fontSize: '0.84rem' }} title="ผลรวม (SUM)">
           {sum !== 0 ? `Σ ${new Intl.NumberFormat('th-TH').format(sum)}` : '-'}
+        </div>
+      );
+    }
+
+    if (col.type === 'time_tracking') {
+      const totalSec = group.items.reduce(
+        (acc, item) => acc + getElapsedSeconds(item[col.id], nowTick),
+        0
+      );
+      return (
+        <div style={{ textAlign: 'center', fontFamily: 'monospace', fontWeight: 700, color: '#0073ea', fontSize: '0.8rem' }} title="เวลารวม (Total Time)">
+          ⏱ {formatDuration(totalSec)}
+        </div>
+      );
+    }
+
+    if (col.type === 'formula') {
+      const sum = group.items.reduce((acc, item) => {
+        const expr = item[`${col.id}_formula`] || col.formula || '{budget} * 1.07';
+        const raw = String(evaluateFormula(expr, item, columns)).replace(/,/g, '');
+        const n = Number(raw);
+        return acc + (Number.isNaN(n) ? 0 : n);
+      }, 0);
+      return (
+        <div style={{ textAlign: 'center', fontWeight: 700, color: '#00c875', fontSize: '0.82rem' }}>
+          {sum !== 0 ? `Σ ${new Intl.NumberFormat('th-TH', { maximumFractionDigits: 2 }).format(sum)}` : '-'}
+        </div>
+      );
+    }
+
+    if (col.type === 'checkbox') {
+      const checked = group.items.filter((item) => Boolean(item[col.id])).length;
+      return (
+        <div style={{ textAlign: 'center', fontSize: '0.76rem', fontWeight: 600, color: '#00c875' }}>
+          {checked}/{group.items.length} ✓
+        </div>
+      );
+    }
+
+    if (col.type === 'rating') {
+      const rated = group.items.map((item) => Number(item[col.id]) || 0).filter((n) => n > 0);
+      const avg = rated.length ? (rated.reduce((s, v) => s + v, 0) / rated.length).toFixed(1) : null;
+      return (
+        <div style={{ textAlign: 'center', fontSize: '0.78rem', fontWeight: 600, color: '#fdab3d' }}>
+          {avg ? `★ ${avg}` : '-'}
         </div>
       );
     }

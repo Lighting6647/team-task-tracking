@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiGrid, FiFolder, FiSearch, FiMoreHorizontal, FiPlus, FiLayout, FiChevronDown, FiChevronRight, FiFileText, FiEdit2, FiTrash2, FiHome, FiCheckSquare, FiVideo, FiStar, FiX, FiCopy, FiInbox, FiArchive, FiLayers } from 'react-icons/fi';
+import { FiGrid, FiFolder, FiSearch, FiMoreHorizontal, FiPlus, FiLayout, FiChevronDown, FiChevronRight, FiFileText, FiEdit2, FiTrash2, FiHome, FiCheckSquare, FiVideo, FiStar, FiX, FiCopy, FiInbox, FiArchive, FiLayers, FiUpload } from 'react-icons/fi';
 
 const Sidebar = ({ 
   boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoard, onArchiveBoard, onRenameBoard, onMoveBoard,
   activeSpecialView, onSelectSpecialView, onResetToBlank,
   isOpen = true, onClose, onDuplicateBoard,
   workspaces = [], activeWorkspaceId = 'ws-main', onSelectWorkspace, onAddWorkspace,
-  onOpenGlobalSearch, onOpenTemplates, trashCount = 0, collapsed = false
+  onOpenGlobalSearch, onOpenTemplates, onOpenImportBoard, trashCount = 0, collapsed = false
 }) => {
   const handleNavigate = (action) => {
     if (typeof action === 'function') action();
@@ -677,6 +677,11 @@ const Sidebar = ({
                   <FiCopy color="#00c875" /> Start with a template
                 </div>
               </>
+            )}
+            {onOpenImportBoard && (
+              <div className="add-menu-item" onClick={() => { setShowAddMenu(false); onOpenImportBoard(); }}>
+                <FiUpload color="#0073ea" /> Import Excel / CSV
+              </div>
             )}
           </div>
         )}

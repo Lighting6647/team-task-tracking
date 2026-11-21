@@ -14,6 +14,7 @@ import {
   FiEdit2,
   FiCheck,
   FiShield,
+  FiUpload,
 } from 'react-icons/fi';
 
 const WorkspaceOverview = ({
@@ -23,6 +24,7 @@ const WorkspaceOverview = ({
   onSelectBoard,
   onAddBoard,
   onOpenTemplates,
+  onOpenImportBoard,
   onUpdateWorkspace,
   onAddMember,
   currentUser,
@@ -182,6 +184,11 @@ const WorkspaceOverview = ({
           </div>
 
           <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+            {onOpenImportBoard && (
+              <button type="button" onClick={() => onOpenImportBoard()} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.9rem', borderRadius: '8px' }}>
+                <FiUpload size={15} /> Import CSV / Excel
+              </button>
+            )}
             <button type="button" onClick={() => onOpenTemplates && onOpenTemplates()} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.9rem', borderRadius: '8px' }}>
               <FiCopy size={15} /> Start with a template
             </button>
