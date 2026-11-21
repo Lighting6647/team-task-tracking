@@ -20,7 +20,8 @@ const TableView = ({
   updateColumnOptions: propUpdateColumnOptions, handleUpdateColumnOptions,
   updateColumnWidth: propUpdateColumnWidth, handleUpdateColumnWidth,
   reorderColumns: propReorderColumns, handleReorderColumns,
-  hiddenColumns = [], isGroupedByStatus = false, onOpenItem, reorderItem
+  hiddenColumns = [], isGroupedByStatus = false, onOpenItem, reorderItem,
+  allBoards = []
 }) => {
   const boardId = propBoardId || board?.id;
   const columns = (propColumns && propColumns.length > 0) ? propColumns : (board?.columns || []);
@@ -152,6 +153,20 @@ const TableView = ({
     setOpenColumnMenuGroupId(null);
   };
 
+  const resolveLinkedItem = (linkVal) => {
+    if (!linkVal || !linkVal.itemId) return null;
+    const sourceBoards = allBoards.length > 0 ? allBoards : (board ? [board] : []);
+    for (const b of sourceBoards) {
+      if (b.type !== 'grid') continue;
+      if (linkVal.boardId && b.id !== linkVal.boardId) continue;
+      for (const g of b.groups || []) {
+        const found = (g.items || []).find((i) => i.id === linkVal.itemId);
+        if (found) return { item: found, boardTitle: b.title };
+      }
+    }
+    return null;
+  };
+
   const renderSummaryCell = (group, col) => {
     if (!group.items || group.items.length === 0) return null;
 
@@ -160,7 +175,7 @@ const TableView = ({
       let total = 0;
       group.items.forEach(item => {
         const val = item[col.id];
-        if (val) {
+        if (val && val !== 'empty') {
           counts[val] = (counts[val] || 0) + 1;
           total++;
         }
@@ -168,32 +183,53 @@ const TableView = ({
 
       if (total === 0) return <div style={{ height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}></div>;
 
+      const donePct = Math.round(((counts.done || 0) / group.items.length) * 100);
       return (
-        <div style={{ display: 'flex', height: '8px', borderRadius: '4px', overflow: 'hidden', width: '100%' }}>
-          {(col.options || []).map(opt => {
-            const count = counts[opt.id] || 0;
-            if (count === 0) return null;
-            const percentage = (count / total) * 100;
-            return (
-              <div 
-                key={opt.id} 
-                style={{ width: `${percentage}%`, background: opt.color }} 
-                title={`${opt.label}: ${count} (${Math.round(percentage)}%)`}
-              />
-            );
-          })}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <div style={{ display: 'flex', height: '8px', borderRadius: '4px', overflow: 'hidden', width: '100%' }}>
+            {(col.options || []).map(opt => {
+              const count = counts[opt.id] || 0;
+              if (count === 0) return null;
+              const percentage = (count / total) * 100;
+              return (
+                <div
+                  key={opt.id}
+                  style={{ width: `${percentage}%`, background: opt.color }}
+                  title={`${opt.label}: ${count} (${Math.round(percentage)}%)`}
+                />
+              );
+            })}
+          </div>
+          {counts.done > 0 && (
+            <span style={{ fontSize: '0.7rem', color: '#00c875', fontWeight: 600, textAlign: 'center' }}>
+              {donePct}% Done
+            </span>
+          )}
         </div>
       );
     }
-    
+
     if (col.type === 'number') {
       const sum = group.items.reduce((acc, item) => {
         const val = parseFloat(item[col.id]);
         return acc + (isNaN(val) ? 0 : val);
       }, 0);
-      return <div style={{ textAlign: 'right', fontWeight: 600, color: 'var(--text-main)', fontSize: '0.9rem' }}>{sum !== 0 ? sum : ''}</div>;
+      return (
+        <div style={{ textAlign: 'center', fontWeight: 600, color: 'var(--text-main)', fontSize: '0.85rem' }}>
+          {sum !== 0 ? `Σ ${new Intl.NumberFormat('th-TH').format(sum)}` : '-'}
+        </div>
+      );
     }
-    
+
+    if (col.type === 'connect_boards') {
+      const linked = group.items.filter((item) => item[col.id]?.itemId).length;
+      return (
+        <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          {linked > 0 ? `${linked} linked` : ''}
+        </div>
+      );
+    }
+
     return null;
   };
 
@@ -359,6 +395,79 @@ const TableView = ({
             ))}
           </div>
         );
+      case 'connect_boards': {
+        const sourceBoards = (allBoards.length > 0 ? allBoards : (board ? [board] : [])).filter((b) => b.type === 'grid');
+        const linkVal = item[col.id];
+        const selectedKey = linkVal?.itemId ? `${linkVal.boardId || ''}::${linkVal.itemId}` : '';
+        return (
+          <div className="cell-content cell-center" style={{ padding: '0 6px' }}>
+            <select
+              aria-label="Connect board item"
+              className="inline-input"
+              value={selectedKey}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (!raw) {
+                  updateItem(group.id, item.id, col.id, null, parentId);
+                  return;
+                }
+                const [targetBoardId, targetItemId] = raw.split('::');
+                const found = resolveLinkedItem({ boardId: targetBoardId, itemId: targetItemId });
+                updateItem(
+                  group.id,
+                  item.id,
+                  col.id,
+                  found ? { boardId: targetBoardId, itemId: targetItemId, title: found.item.title } : null,
+                  parentId
+                );
+              }}
+              style={{ fontSize: '0.78rem', color: selectedKey ? '#579bfc' : 'var(--text-muted)', textAlign: 'center', cursor: 'pointer' }}
+            >
+              <option value="">+ Connect</option>
+              {sourceBoards.map((b) =>
+                (b.groups || []).flatMap((g) =>
+                  (g.items || [])
+                    .filter((candidate) => candidate.id !== item.id)
+                    .map((candidate) => (
+                      <option key={`${b.id}::${candidate.id}`} value={`${b.id}::${candidate.id}`}>
+                        {b.title}: {candidate.title}
+                      </option>
+                    ))
+                )
+              )}
+            </select>
+          </div>
+        );
+      }
+      case 'mirror': {
+        const connectCols = columns.filter((c) => c.type === 'connect_boards');
+        const firstLink = connectCols.map((c) => item[c.id]).find((v) => v && v.itemId);
+        const resolved = resolveLinkedItem(firstLink);
+        if (!resolved) {
+          return (
+            <div className="cell-content cell-center" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              —
+            </div>
+          );
+        }
+        const statusColor =
+          resolved.item.status === 'done'
+            ? '#00c875'
+            : resolved.item.status === 'working'
+              ? '#fdab3d'
+              : resolved.item.status === 'stuck'
+                ? '#e2445c'
+                : '#8b92a8';
+        return (
+          <div className="cell-content cell-center" style={{ gap: '6px', padding: '0 6px' }} title={`Mirror from ${resolved.boardTitle}: ${resolved.item.title}`}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: statusColor, flexShrink: 0 }} />
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {resolved.item.status || 'empty'}
+              {resolved.item.date ? ` · ${resolved.item.date}` : ''}
+            </span>
+          </div>
+        );
+      }
       case 'text':
       default:
         return (
@@ -480,6 +589,8 @@ const TableView = ({
                       <div className="popover-option" onClick={() => handleAddNewColumn('link', 'Link')}>🔗 Link</div>
                       <div className="popover-option" onClick={() => handleAddNewColumn('checkbox', 'Checkbox')}>☑️ Checkbox</div>
                       <div className="popover-option" onClick={() => handleAddNewColumn('rating', 'Rating')}>⭐ Rating</div>
+                      <div className="popover-option" onClick={() => handleAddNewColumn('connect_boards', 'Connect Boards')}>🔗 Connect Boards</div>
+                      <div className="popover-option" onClick={() => handleAddNewColumn('mirror', 'Mirror')}>🪞 Mirror</div>
                     </div>
                   )}
                 </th>
@@ -683,7 +794,9 @@ const TableView = ({
             <tfoot>
               <tr>
                 <td style={{ borderBottom: 'none' }}></td>
-                <td style={{ borderBottom: 'none' }}></td>
+                <td style={{ borderBottom: 'none', padding: '0.5rem 1rem', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  {(group.items || []).length} รายการ
+                </td>
                 {columns.map(col => {
                   if (hiddenColumns.includes(col.id)) return null;
                   return (

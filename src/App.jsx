@@ -20,6 +20,15 @@ import NotificationCenter from './components/NotificationCenter';
 import IntegrationsModal from './components/IntegrationsModal';
 import AutomationsModal from './components/AutomationsModal';
 import MobileBottomNav from './components/MobileBottomNav';
+import {
+  createActivityEntry,
+  loadAutomations,
+  loadNotifications,
+  runCreateAutomations,
+  runUpdateAutomations,
+  saveAutomations,
+  saveNotifications
+} from './utils/automationEngine';
 import './index.css';
 
 const INITIAL_STATUS_OPTIONS = [
@@ -228,7 +237,33 @@ const App = () => {
     typeof window !== 'undefined' ? window.innerWidth > 1024 : false
   );
   const [isAiCopilotOpen, setIsAiCopilotOpen] = useState(false);
+  const [automationRecipes, setAutomationRecipes] = useState(loadAutomations);
+  const [notifications, setNotifications] = useState(loadNotifications);
   const fileInputRef = React.useRef(null);
+
+  useEffect(() => {
+    saveAutomations(automationRecipes);
+  }, [automationRecipes]);
+
+  useEffect(() => {
+    saveNotifications(notifications);
+  }, [notifications]);
+
+  const handleToggleAutomation = (id) => {
+    setAutomationRecipes((prev) => prev.map((r) => (r.id === id ? { ...r, active: !r.active } : r)));
+  };
+
+  const handleDeleteAutomation = (id) => {
+    setAutomationRecipes((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  const handleAddAutomation = (newRule) => {
+    setAutomationRecipes((prev) => [...prev, newRule]);
+  };
+
+  const handleMarkAllNotificationsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
 
   useEffect(() => {
     const root = document.documentElement;
@@ -787,8 +822,13 @@ const App = () => {
     const targetBoard = boards.find(b => b.id === targetBoardId);
     if (!targetBoard || targetBoard.type !== 'grid') return null;
     const group = (targetBoard.groups || []).find(g => g.id === activeItemContext.groupId);
-    if (!group) return null;
-    return (group.items || []).find(i => i.id === activeItemContext.itemId);
+    const inGroup = group ? (group.items || []).find(i => i.id === activeItemContext.itemId) : null;
+    if (inGroup) return inGroup;
+    for (const g of targetBoard.groups || []) {
+      const found = (g.items || []).find(i => i.id === activeItemContext.itemId);
+      if (found) return found;
+    }
+    return null;
   };
 
   const handleUpdateActiveTaskContext = (field, value) => {
@@ -799,51 +839,133 @@ const App = () => {
 
   const handleUpdateItem = (groupId, itemId, field, value, parentId = null, targetBoardId = null) => {
     const bId = targetBoardId || activeBoardId;
-    setBoards(prevBoards => prevBoards.map(b => {
-      if (b.id !== bId || b.type !== 'grid') return b;
-      const newGroups = (b.groups || []).map(g => {
-        if (g.id === groupId) {
+    const targetBoard = boards.find((b) => b.id === bId && b.type === 'grid');
+    let generatedNotifications = [];
+
+    if (targetBoard && !parentId) {
+      const currentBoardWithChange = {
+        ...targetBoard,
+        groups: (targetBoard.groups || []).map((g) =>
+          g.id === groupId
+            ? {
+                ...g,
+                items: (g.items || []).map((item) => (item.id === itemId ? { ...item, [field]: value } : item))
+              }
+            : g
+        )
+      };
+      const autoRes = runUpdateAutomations({
+        board: currentBoardWithChange,
+        itemId,
+        field,
+        value,
+        recipes: automationRecipes
+      });
+      generatedNotifications = autoRes.notifications;
+    }
+
+    setBoards((prevBoards) =>
+      prevBoards.map((b) => {
+        if (b.id !== bId || b.type !== 'grid') return b;
+        const shouldTrackActivity = !parentId && field !== 'updates' && field !== 'activityLog';
+        const updatedGroups = (b.groups || []).map((g) => {
+          if (g.id !== groupId) return g;
           return {
             ...g,
-            items: (g.items || []).map(item => {
+            items: (g.items || []).map((item) => {
               if (parentId) {
                 if (item.id === parentId) {
                   return {
                     ...item,
-                    subitems: (item.subitems || []).map(sub => 
+                    subitems: (item.subitems || []).map((sub) =>
                       sub.id === itemId ? { ...sub, [field]: value } : sub
                     )
                   };
                 }
                 return item;
-              } else {
-                return item.id === itemId ? { ...item, [field]: value } : item;
               }
+              if (item.id !== itemId) return item;
+              const prevVal = item[field];
+              const nextLog =
+                shouldTrackActivity && prevVal !== value
+                  ? [
+                      createActivityEntry({
+                        action: `อัปเดตฟิลด์ ${field}`,
+                        field,
+                        from: typeof prevVal === 'object' ? JSON.stringify(prevVal) : prevVal,
+                        to: typeof value === 'object' ? JSON.stringify(value) : value
+                      }),
+                      ...(item.activityLog || [])
+                    ].slice(0, 40)
+                  : item.activityLog;
+              return {
+                ...item,
+                [field]: value,
+                ...(nextLog ? { activityLog: nextLog } : {})
+              };
             })
           };
-        }
-        return g;
-      });
-      return { ...b, groups: newGroups };
-    }));
+        });
+
+        if (parentId) return { ...b, groups: updatedGroups };
+        const autoApplied = runUpdateAutomations({
+          board: { ...b, groups: updatedGroups },
+          itemId,
+          field,
+          value,
+          recipes: automationRecipes
+        });
+        return { ...b, groups: autoApplied.groups };
+      })
+    );
+
+    if (generatedNotifications.length > 0) {
+      setNotifications((prev) => [...generatedNotifications, ...prev].slice(0, 30));
+    }
   };
 
   const handleAddItem = (groupId, title, extraFields = {}, targetBoardId = null) => {
     const bId = targetBoardId || activeBoardId;
     const newItemId = uuidv4();
-    setBoards(prevBoards => prevBoards.map(b => {
-      if (b.id !== bId || b.type !== 'grid') return b;
-      const newGroups = (b.groups || []).map(g => {
-        if (g.id === groupId) {
-          return {
-            ...g,
-            items: [...g.items, { id: newItemId, title, ...extraFields }]
-          };
-        }
-        return g;
-      });
-      return { ...b, groups: newGroups };
-    }));
+    const targetBoard = boards.find((b) => b.id === bId && b.type === 'grid');
+    const baseItem = {
+      id: newItemId,
+      title,
+      ...extraFields,
+      activityLog: [
+        createActivityEntry({
+          action: `สร้างรายการงาน "${title}"`,
+          field: 'title',
+          from: '',
+          to: title
+        })
+      ]
+    };
+    const autoCreated = runCreateAutomations({
+      board: targetBoard,
+      item: baseItem,
+      recipes: automationRecipes
+    });
+
+    setBoards((prevBoards) =>
+      prevBoards.map((b) => {
+        if (b.id !== bId || b.type !== 'grid') return b;
+        const newGroups = (b.groups || []).map((g) => {
+          if (g.id === groupId) {
+            return {
+              ...g,
+              items: [...g.items, autoCreated.item]
+            };
+          }
+          return g;
+        });
+        return { ...b, groups: newGroups };
+      })
+    );
+
+    if (autoCreated.notifications.length > 0) {
+      setNotifications((prev) => [...autoCreated.notifications, ...prev].slice(0, 30));
+    }
     return newItemId;
   };
 
@@ -1069,7 +1191,7 @@ const App = () => {
                     </div>
                   </div>
                   <div className="board-header-actions">
-                    <NotificationCenter boards={boards} />
+                    <NotificationCenter notifications={notifications} onMarkAllRead={handleMarkAllNotificationsRead} />
                     <button 
                       type="button" 
                       onClick={() => setStayAwake(!stayAwake)} 
@@ -1360,6 +1482,7 @@ const App = () => {
                     }}
                     searchQuery={searchQuery}
                     isGroupedByStatus={groupBy === 'status'}
+                    allBoards={boards}
                   />
                 )}
                 {activeBoard.type === 'grid' && viewType === 'kanban' && <KanbanView board={activeBoard} updateItem={handleUpdateItem} addItem={handleAddItem} onOpenItem={(groupId, itemId) => { setTaskDrawerOpen(true); setActiveItemContext({ groupId, itemId }); }} />}
@@ -1424,7 +1547,11 @@ const App = () => {
 
       <AutomationsModal 
         isOpen={automationsOpen} 
-        onClose={() => setAutomationsOpen(false)} 
+        onClose={() => setAutomationsOpen(false)}
+        recipes={automationRecipes}
+        onToggleRecipe={handleToggleAutomation}
+        onDeleteRecipe={handleDeleteAutomation}
+        onAddRecipe={handleAddAutomation}
       />
 
       <MobileBottomNav 

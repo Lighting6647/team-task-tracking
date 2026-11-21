@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FiX, FiMessageCircle, FiAlignLeft, FiSend } from 'react-icons/fi';
+import { FiX, FiMessageCircle, FiAlignLeft, FiSend, FiClock } from 'react-icons/fi';
 import { v4 as uuidv4 } from 'uuid';
 
 const TaskDrawer = ({ isOpen, onClose, task, onUpdate }) => {
-  const [activeTab, setActiveTab] = useState('updates'); // 'updates' | 'description'
+  const [activeTab, setActiveTab] = useState('updates'); // 'updates' | 'description' | 'activity'
   const [newUpdate, setNewUpdate] = useState('');
   const [description, setDescription] = useState(task?.description || '');
 
@@ -25,12 +25,12 @@ const TaskDrawer = ({ isOpen, onClose, task, onUpdate }) => {
 
   const handlePostUpdate = () => {
     if (!newUpdate.trim()) return;
-    
+
     const updateObj = {
       id: uuidv4(),
-      text: newUpdate,
+      text: newUpdate.trim(),
       createdAt: new Date().toISOString(),
-      user: 'You' // Mock user for now
+      user: task.owner || 'คุณไลท์'
     };
 
     const currentUpdates = task.updates || [];
@@ -42,21 +42,25 @@ const TaskDrawer = ({ isOpen, onClose, task, onUpdate }) => {
     onUpdate('description', description);
   };
 
+  const activityEntries = task.activityLog || [];
+
   return (
     <>
-      {/* Backdrop overlay */}
-      <div 
+      <div
         onClick={onClose}
         style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
           background: 'rgba(0,0,0,0.4)',
           zIndex: 999,
           backdropFilter: 'blur(2px)'
         }}
       />
-      
-      {/* Drawer */}
-      <aside 
+
+      <aside
         role="dialog"
         aria-modal="true"
         aria-labelledby="drawer-task-title"
@@ -68,7 +72,7 @@ const TaskDrawer = ({ isOpen, onClose, task, onUpdate }) => {
           bottom: 0,
           width: '450px',
           maxWidth: '100vw',
-          background: 'rgba(29, 30, 47, 0.85)',
+          background: 'rgba(29, 30, 47, 0.92)',
           backdropFilter: 'blur(30px)',
           WebkitBackdropFilter: 'blur(30px)',
           borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
@@ -80,58 +84,93 @@ const TaskDrawer = ({ isOpen, onClose, task, onUpdate }) => {
         }}
       >
         {/* Header */}
-        <div style={{ 
-          padding: '1.5rem', 
-          borderBottom: '1px solid rgba(255,255,255,0.1)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start'
-        }}>
-          <div>
-            <h2 id="drawer-task-title" style={{ margin: '0 0 1rem 0', fontSize: '1.5rem', color: 'var(--text-main)', lineHeight: '1.3' }}>
+        <div
+          style={{
+            padding: '1.5rem',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start'
+          }}
+        >
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <h2 id="drawer-task-title" style={{ margin: '0 0 1rem 0', fontSize: '1.4rem', color: 'var(--text-main)', lineHeight: '1.3' }}>
               {task.title}
             </h2>
-            <div role="tablist" style={{ display: 'flex', gap: '1rem' }}>
-              <button 
+            <div role="tablist" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button
                 type="button"
                 role="tab"
                 aria-selected={activeTab === 'updates'}
                 onClick={() => setActiveTab('updates')}
                 style={{
-                  background: 'transparent', border: 'none', 
+                  background: 'transparent',
+                  border: 'none',
                   color: activeTab === 'updates' ? 'var(--accent-blue)' : 'var(--text-muted)',
                   borderBottom: activeTab === 'updates' ? '2px solid var(--accent-blue)' : '2px solid transparent',
-                  padding: '0.25rem 0.5rem', cursor: 'pointer', fontWeight: 600,
-                  display: 'flex', alignItems: 'center', gap: '0.5rem'
+                  padding: '0.25rem 0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
                 }}
               >
                 <FiMessageCircle aria-hidden="true" /> Updates ({(task.updates || []).length})
               </button>
-              <button 
+              <button
                 type="button"
                 role="tab"
                 aria-selected={activeTab === 'description'}
                 onClick={() => setActiveTab('description')}
                 style={{
-                  background: 'transparent', border: 'none', 
+                  background: 'transparent',
+                  border: 'none',
                   color: activeTab === 'description' ? 'var(--accent-purple)' : 'var(--text-muted)',
                   borderBottom: activeTab === 'description' ? '2px solid var(--accent-purple)' : '2px solid transparent',
-                  padding: '0.25rem 0.5rem', cursor: 'pointer', fontWeight: 600,
-                  display: 'flex', alignItems: 'center', gap: '0.5rem'
+                  padding: '0.25rem 0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
                 }}
               >
                 <FiAlignLeft aria-hidden="true" /> Description
               </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'activity'}
+                onClick={() => setActiveTab('activity')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: activeTab === 'activity' ? '#00c875' : 'var(--text-muted)',
+                  borderBottom: activeTab === 'activity' ? '2px solid #00c875' : '2px solid transparent',
+                  padding: '0.25rem 0.5rem',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                <FiClock aria-hidden="true" /> Activity Log ({activityEntries.length})
+              </button>
             </div>
           </div>
-          <button 
+          <button
             type="button"
             onClick={onClose}
             aria-label="ปิดหน้ารายละเอียดงาน (Close)"
             className="icon-btn"
-            style={{ 
-              background: 'transparent', border: 'none', color: 'var(--text-muted)', 
-              cursor: 'pointer', padding: '0.5rem' 
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              padding: '0.5rem'
             }}
           >
             <FiX size={24} aria-hidden="true" />
@@ -140,58 +179,70 @@ const TaskDrawer = ({ isOpen, onClose, task, onUpdate }) => {
 
         {/* Content Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
-          
           {activeTab === 'updates' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%' }}>
-              {/* Input Area */}
-              <div style={{
-                background: 'rgba(0,0,0,0.2)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                padding: '1rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.5rem'
-              }}>
-                <textarea 
+              <div
+                style={{
+                  background: 'rgba(0,0,0,0.2)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  padding: '1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem'
+                }}
+              >
+                <textarea
                   value={newUpdate}
                   onChange={(e) => setNewUpdate(e.target.value)}
                   placeholder="Write an update..."
                   style={{
-                    background: 'transparent', border: 'none', color: 'var(--text-main)',
-                    resize: 'vertical', minHeight: '80px', outline: 'none', fontFamily: 'inherit'
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-main)',
+                    resize: 'vertical',
+                    minHeight: '80px',
+                    outline: 'none',
+                    fontFamily: 'inherit'
                   }}
                 />
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button 
-                    className="btn-primary" 
+                  <button
+                    type="button"
+                    className="btn-primary"
                     onClick={handlePostUpdate}
                     disabled={!newUpdate.trim()}
-                    style={{ padding: '0.4rem 1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: !newUpdate.trim() ? 0.5 : 1 }}
+                    style={{
+                      padding: '0.4rem 1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      opacity: !newUpdate.trim() ? 0.5 : 1
+                    }}
                   >
                     <FiSend size={14} /> Update
                   </button>
                 </div>
               </div>
 
-              {/* Updates List */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {(task.updates || []).map((update, index) => (
-                  <div key={update.id || index} style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                    borderRadius: '8px',
-                    padding: '1rem'
-                  }}>
+                  <div
+                    key={update.id || index}
+                    style={{
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.05)',
+                      borderRadius: '8px',
+                      padding: '1rem'
+                    }}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                       <span style={{ fontWeight: 600, color: 'var(--accent-blue)' }}>{update.user}</span>
                       <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                         {new Date(update.createdAt).toLocaleString()}
                       </span>
                     </div>
-                    <div style={{ color: 'var(--text-main)', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
-                      {update.text}
-                    </div>
+                    <div style={{ color: 'var(--text-main)', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>{update.text}</div>
                   </div>
                 ))}
                 {(task.updates || []).length === 0 && (
@@ -204,32 +255,76 @@ const TaskDrawer = ({ isOpen, onClose, task, onUpdate }) => {
           )}
 
           {activeTab === 'description' && (
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
-               <textarea 
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  onBlur={handleSaveDescription}
-                  placeholder="Add a detailed description for this task..."
-                  style={{
-                    flex: 1,
-                    background: 'rgba(0,0,0,0.1)', 
-                    border: '1px solid rgba(255,255,255,0.1)', 
-                    borderRadius: '8px',
-                    color: 'var(--text-main)',
-                    resize: 'none', 
-                    padding: '1rem',
-                    outline: 'none', 
-                    fontFamily: 'inherit',
-                    lineHeight: '1.6'
-                  }}
-                />
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'right' }}>
-                  Auto-saves on blur
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onBlur={handleSaveDescription}
+                placeholder="Add a detailed description for this task..."
+                style={{
+                  flex: 1,
+                  background: 'rgba(0,0,0,0.1)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  color: 'var(--text-main)',
+                  resize: 'none',
+                  padding: '1rem',
+                  outline: 'none',
+                  fontFamily: 'inherit',
+                  lineHeight: '1.6'
+                }}
+              />
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'right' }}>Auto-saves on blur</div>
+            </div>
+          )}
+
+          {activeTab === 'activity' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {activityEntries.length === 0 ? (
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '2rem' }}>
+                  ยังไม่มีประวัติการเปลี่ยนแปลงในงานนี้ครับ
                 </div>
-             </div>
+              ) : (
+                activityEntries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    style={{
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: '8px',
+                      padding: '0.75rem 1rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                      <span
+                        style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          color: entry.actor === 'Automation' ? '#a259ff' : '#00c875'
+                        }}
+                      >
+                        {entry.actor === 'Automation' ? '⚡ Automation' : `👤 ${entry.actor}`}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                        {new Date(entry.timestamp).toLocaleString('th-TH')}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>{entry.action}</div>
+                    {entry.field && (entry.from || entry.to) && (
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {entry.field}: <span style={{ textDecoration: 'line-through' }}>{entry.from || '-'}</span> ➔{' '}
+                        <strong style={{ color: '#579bfc' }}>{entry.to || '-'}</strong>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
           )}
         </div>
-
       </aside>
 
       <style>{`

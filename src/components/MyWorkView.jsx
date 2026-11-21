@@ -1,17 +1,34 @@
 import React, { useState } from 'react';
-import { FiCheckCircle, FiClock, FiAlertCircle, FiSearch, FiExternalLink } from 'react-icons/fi';
+import { FiCheckCircle, FiClock, FiAlertCircle, FiSearch, FiExternalLink, FiCalendar, FiList } from 'react-icons/fi';
 import StatusDropdown from './StatusDropdown';
+import { classifyTaskSchedule } from '../utils/automationEngine';
+
+const SCHEDULE_SECTIONS = [
+  { key: 'overdue', title: '⚠️ เลยกำหนด (Overdue)', color: '#e2445c' },
+  { key: 'today', title: '📌 วันนี้ (Today)', color: '#fdab3d' },
+  { key: 'this_week', title: '📅 สัปดาห์นี้ (This Week)', color: '#579bfc' },
+  { key: 'later', title: '🗓️ ถัดไป (Later)', color: '#a259ff' },
+  { key: 'no_date', title: '⏳ ยังไม่ระบุวัน (No Due Date)', color: '#9aa0b8' },
+  { key: 'done', title: '✅ เสร็จแล้ว (Done)', color: '#00c875' }
+];
+
+const STATUS_OPTIONS = [
+  { id: 'done', label: 'Done', color: '#00c875' },
+  { id: 'working', label: 'Working on it', color: '#fdab3d' },
+  { id: 'stuck', label: 'Stuck', color: '#e2445c' },
+  { id: 'empty', label: '', color: '#c4c4c4' }
+];
 
 const MyWorkView = ({ boards, onSelectBoard, onOpenItem, updateItem }) => {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [groupBySchedule, setGroupBySchedule] = useState(true);
 
-  // Collect all tasks across all grid boards
   const allTasks = [];
-  boards.forEach(b => {
+  boards.forEach((b) => {
     if (b.type === 'grid' && b.groups) {
-      b.groups.forEach(g => {
-        (g.items || []).forEach(item => {
+      b.groups.forEach((g) => {
+        (g.items || []).forEach((item) => {
           allTasks.push({
             ...item,
             boardId: b.id,
@@ -25,36 +42,130 @@ const MyWorkView = ({ boards, onSelectBoard, onOpenItem, updateItem }) => {
     }
   });
 
-  const filteredTasks = allTasks.filter(task => {
+  const filteredTasks = allTasks.filter((task) => {
     const matchesSearch = !search.trim() || (task.title || '').toLowerCase().includes(search.toLowerCase());
     const matchesStatus = filterStatus === 'all' || task.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
   const totalCount = allTasks.length;
-  const doneCount = allTasks.filter(t => t.status === 'done').length;
-  const workingCount = allTasks.filter(t => t.status === 'working').length;
-  const stuckCount = allTasks.filter(t => t.status === 'stuck').length;
+  const doneCount = allTasks.filter((t) => t.status === 'done').length;
+  const workingCount = allTasks.filter((t) => t.status === 'working').length;
+  const stuckCount = allTasks.filter((t) => t.status === 'stuck').length;
 
-  const STATUS_OPTIONS = [
-    { id: 'done', label: 'Done', color: '#00c875' },
-    { id: 'working', label: 'Working on it', color: '#fdab3d' },
-    { id: 'stuck', label: 'Stuck', color: '#e2445c' },
-    { id: 'empty', label: '', color: '#c4c4c4' }
-  ];
+  const renderTaskRow = (task) => (
+    <div
+      key={`${task.boardId}-${task.id}`}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(200px, 2fr) 1.2fr 1fr 1fr 1fr 50px',
+        padding: '0.75rem 1rem',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        alignItems: 'center',
+        fontSize: '0.9rem',
+        transition: 'background 0.15s'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = 'transparent';
+      }}
+    >
+      <div
+        style={{ fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+        onClick={() => onOpenItem && onOpenItem(task.groupId, task.id, task.boardId)}
+        title="คลิกเพื่อดูรายละเอียดงาน"
+      >
+        <span>{task.title}</span>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: task.groupColor }}></span>
+        <span>
+          {task.boardTitle} › {task.groupTitle}
+        </span>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <StatusDropdown
+          statusId={task.status}
+          statusOptions={STATUS_OPTIONS}
+          onStatusChange={(newStatus) => updateItem && updateItem(task.groupId, task.id, 'status', newStatus, null, task.boardId)}
+        />
+      </div>
+
+      <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+        {task.date || task.timeline?.end || '-'}
+      </div>
+
+      <div style={{ textAlign: 'center' }}>
+        {task.owner ? (
+          <span style={{ background: '#579bfc', color: '#fff', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem' }}>
+            {task.owner}
+          </span>
+        ) : (
+          '-'
+        )}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center' }}>
+        <button
+          type="button"
+          onClick={() => onSelectBoard && onSelectBoard(task.boardId)}
+          title="ไปที่บอร์ดนี้"
+          style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+        >
+          <FiExternalLink size={16} />
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="view-responsive-padding" style={{ color: 'var(--text-main)', height: '100%', overflowY: 'auto' }}>
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span>📋 My Work</span>
-          <span style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--text-muted)', background: 'rgba(255,255,255,0.08)', padding: '2px 10px', borderRadius: '12px' }}>
-            {totalCount} งานทั้งหมด
-          </span>
-        </h1>
-        <p style={{ color: 'var(--text-muted)', margin: 0 }}>
-          รวบรวมงานทั้งหมดที่คุณและทีมกำลังรับผิดชอบจากทุกกระดาน (Cross-board overview)
-        </p>
+      <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span>📋 My Work</span>
+            <span
+              style={{
+                fontSize: '1rem',
+                fontWeight: 500,
+                color: 'var(--text-muted)',
+                background: 'rgba(255,255,255,0.08)',
+                padding: '2px 10px',
+                borderRadius: '12px'
+              }}
+            >
+              {totalCount} งานทั้งหมด
+            </span>
+          </h1>
+          <p style={{ color: 'var(--text-muted)', margin: 0 }}>
+            รวบรวมงานทั้งหมดที่คุณและทีมกำลังรับผิดชอบจากทุกกระดาน แยกตามกำหนดส่ง (Cross-board overview)
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setGroupBySchedule((prev) => !prev)}
+          style={{
+            padding: '0.5rem 0.9rem',
+            borderRadius: '8px',
+            border: '1px solid var(--border-color)',
+            background: '#20243f',
+            color: '#fff',
+            fontSize: '0.85rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            fontWeight: 600
+          }}
+        >
+          {groupBySchedule ? <FiCalendar size={15} color="#579bfc" /> : <FiList size={15} color="#00c875" />}
+          <span>{groupBySchedule ? 'จัดกลุ่มตามกำหนดส่ง' : 'รายการทั้งหมด'}</span>
+        </button>
       </div>
 
       {/* KPI Cards */}
@@ -105,8 +216,9 @@ const MyWorkView = ({ boards, onSelectBoard, onOpenItem, updateItem }) => {
         </div>
 
         <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '2px', maxWidth: '100%' }}>
-          {['all', 'working', 'done', 'stuck'].map(st => (
+          {['all', 'working', 'done', 'stuck'].map((st) => (
             <button
+              type="button"
               key={st}
               onClick={() => setFilterStatus(st)}
               style={{
@@ -130,80 +242,60 @@ const MyWorkView = ({ boards, onSelectBoard, onOpenItem, updateItem }) => {
       {/* Task List Table Container */}
       <div className="my-work-table-container">
         <div className="my-work-table-inner">
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(200px, 2fr) 1.2fr 1fr 1fr 1fr 50px', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', background: '#1c2038', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-          <div>ชื่องาน (Item)</div>
-          <div>กระดาน / หมวดหมู่งาน</div>
-          <div style={{ textAlign: 'center' }}>สถานะ (Status)</div>
-          <div style={{ textAlign: 'center' }}>กำหนดส่ง (Due Date)</div>
-          <div style={{ textAlign: 'center' }}>ผู้รับผิดชอบ</div>
-          <div></div>
-        </div>
-
-        {filteredTasks.length === 0 ? (
-          <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            ไม่พบงานที่ตรงกับเงื่อนไขการค้นหา
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'minmax(200px, 2fr) 1.2fr 1fr 1fr 1fr 50px',
+              padding: '0.75rem 1rem',
+              borderBottom: '1px solid var(--border-color)',
+              background: '#1c2038',
+              fontSize: '0.85rem',
+              color: 'var(--text-muted)',
+              fontWeight: 600
+            }}
+          >
+            <div>ชื่องาน (Item)</div>
+            <div>กระดาน / หมวดหมู่งาน</div>
+            <div style={{ textAlign: 'center' }}>สถานะ (Status)</div>
+            <div style={{ textAlign: 'center' }}>กำหนดส่ง (Due Date)</div>
+            <div style={{ textAlign: 'center' }}>ผู้รับผิดชอบ</div>
+            <div></div>
           </div>
-        ) : (
-          filteredTasks.map(task => (
-            <div
-              key={`${task.boardId}-${task.id}`}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '2fr 1.2fr 1fr 1fr 1fr 50px',
-                padding: '0.75rem 1rem',
-                borderBottom: '1px solid rgba(255,255,255,0.05)',
-                alignItems: 'center',
-                fontSize: '0.9rem',
-                transition: 'background 0.15s'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-            >
-              <div 
-                style={{ fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                onClick={() => onOpenItem && onOpenItem(task.groupId, task.id, task.boardId)}
-                title="คลิกเพื่อดูรายละเอียดงาน"
-              >
-                <span>{task.title}</span>
-              </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: task.groupColor }}></span>
-                <span>{task.boardTitle} › {task.groupTitle}</span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <StatusDropdown
-                  statusId={task.status}
-                  statusOptions={STATUS_OPTIONS}
-                  onStatusChange={(newStatus) => updateItem && updateItem(task.groupId, task.id, 'status', newStatus, null, task.boardId)}
-                />
-              </div>
-
-              <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                {task.date || '-'}
-              </div>
-
-              <div style={{ textAlign: 'center' }}>
-                {task.owner ? (
-                  <span style={{ background: '#579bfc', color: '#fff', padding: '2px 8px', borderRadius: '10px', fontSize: '0.75rem' }}>
-                    {task.owner}
-                  </span>
-                ) : '-'}
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <button
-                  onClick={() => onSelectBoard && onSelectBoard(task.boardId)}
-                  title="ไปที่บอร์ดนี้"
-                  style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
-                >
-                  <FiExternalLink size={16} />
-                </button>
-              </div>
+          {filteredTasks.length === 0 ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              ไม่พบงานที่ตรงกับเงื่อนไขการค้นหา
             </div>
-          ))
-        )}
+          ) : groupBySchedule ? (
+            SCHEDULE_SECTIONS.map((section) => {
+              const sectionTasks = filteredTasks.filter((t) => classifyTaskSchedule(t) === section.key);
+              if (sectionTasks.length === 0) return null;
+              return (
+                <div key={section.key}>
+                  <div
+                    style={{
+                      padding: '0.55rem 1rem',
+                      background: 'rgba(255,255,255,0.03)',
+                      borderBottom: '1px solid rgba(255,255,255,0.06)',
+                      borderLeft: `4px solid ${section.color}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      color: section.color
+                    }}
+                  >
+                    <span>{section.title}</span>
+                    <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>{sectionTasks.length} งาน</span>
+                  </div>
+                  {sectionTasks.map(renderTaskRow)}
+                </div>
+              );
+            })
+          ) : (
+            filteredTasks.map(renderTaskRow)
+          )}
         </div>
       </div>
     </div>
