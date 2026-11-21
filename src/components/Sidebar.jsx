@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FiGrid, FiFolder, FiSearch, FiMoreHorizontal, FiPlus, FiLayout, FiChevronDown, FiChevronRight, FiFileText, FiEdit2, FiTrash2, FiHome, FiCheckSquare, FiVideo, FiStar, FiX, FiCopy } from 'react-icons/fi';
+import { FiGrid, FiFolder, FiSearch, FiMoreHorizontal, FiPlus, FiLayout, FiChevronDown, FiChevronRight, FiFileText, FiEdit2, FiTrash2, FiHome, FiCheckSquare, FiVideo, FiStar, FiX, FiCopy, FiInbox, FiArchive, FiLayers } from 'react-icons/fi';
 
 const Sidebar = ({ 
-  boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoard, onRenameBoard, onMoveBoard,
+  boards, activeBoardId, onSelectBoard, onAddBoard, onDeleteBoard, onArchiveBoard, onRenameBoard, onMoveBoard,
   activeSpecialView, onSelectSpecialView, onResetToBlank,
-  isOpen = true, onClose, onDuplicateBoard
+  isOpen = true, onClose, onDuplicateBoard,
+  workspaces = [], activeWorkspaceId = 'ws-main', onSelectWorkspace, onAddWorkspace,
+  onOpenGlobalSearch, onOpenTemplates, trashCount = 0
 }) => {
   const handleNavigate = (action) => {
     if (typeof action === 'function') action();
@@ -24,12 +26,16 @@ const Sidebar = ({
   const [draggedBoardId, setDraggedBoardId] = useState(null);
   const [dragOverId, setDragOverId] = useState(null);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showWorkspaceMenu, setShowWorkspaceMenu] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [favorites, setFavorites] = useState(['board-passapp-1']);
   const menuRef = useRef(null);
   const actionMenuRef = useRef(null);
   const searchInputRef = useRef(null);
   const moreMenuRef = useRef(null);
+  const wsMenuRef = useRef(null);
+
+  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId) || workspaces[0] || { id: 'ws-main', name: 'Main workspace', color: '#0073ea' };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -41,6 +47,9 @@ const Sidebar = ({
       }
       if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
         setShowMoreMenu(false);
+      }
+      if (wsMenuRef.current && !wsMenuRef.current.contains(event.target)) {
+        setShowWorkspaceMenu(false);
       }
       if (isSearching && searchInputRef.current && !searchInputRef.current.contains(event.target) && !searchQuery) {
         setIsSearching(false);
@@ -285,8 +294,13 @@ const Sidebar = ({
                 <FiStar color={favorites.includes(board.id) ? '#fdab3d' : 'var(--text-muted)'} /> {favorites.includes(board.id) ? 'Remove Favorite' : 'Favorite'}
               </div>
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', margin: '4px 0' }}></div>
+              {onArchiveBoard && (
+                <div className="add-menu-item" onClick={(e) => { e.stopPropagation(); onArchiveBoard(board.id); setActionMenuId(null); }}>
+                  <FiArchive color="#fdab3d" /> Archive
+                </div>
+              )}
               <div className="add-menu-item" style={{ color: 'var(--danger-color, #ff4d4d)' }} onClick={(e) => { e.stopPropagation(); handleDelete(board.id, e); }}>
-                <FiTrash2 color="var(--danger-color, #ff4d4d)" /> Delete
+                <FiTrash2 color="var(--danger-color, #ff4d4d)" /> Move to Trash
               </div>
             </div>
           )}
@@ -323,6 +337,34 @@ const Sidebar = ({
 
       {/* Top Navigation Items */}
       <div style={{ padding: '0.75rem 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        {onOpenGlobalSearch && (
+          <div style={{ padding: '0 0.75rem 0.55rem' }}>
+            <button
+              type="button"
+              onClick={() => handleNavigate(() => onOpenGlobalSearch())}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.5rem',
+                padding: '0.42rem 0.7rem',
+                borderRadius: '999px',
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'rgba(255,255,255,0.04)',
+                color: 'var(--text-muted)',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                <FiSearch size={13} /> Search everything...
+              </span>
+              <span style={{ fontSize: '0.68rem', opacity: 0.75 }}>Ctrl K</span>
+            </button>
+          </div>
+        )}
+
         <div 
           className={`sidebar-menu-item ${!activeSpecialView && activeBoardId === 'board-passapp-1' ? 'active' : ''}`}
           onClick={() => {
@@ -338,6 +380,18 @@ const Sidebar = ({
         </div>
 
         <div 
+          className={`sidebar-menu-item ${activeSpecialView === 'workspace-overview' ? 'active' : ''}`}
+          onClick={() => {
+            handleNavigate(() => {
+              if (onSelectSpecialView) onSelectSpecialView('workspace-overview');
+            });
+          }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
+        >
+          <FiLayers size={18} /> Workspace overview
+        </div>
+
+        <div 
           className={`sidebar-menu-item ${activeSpecialView === 'my-work' ? 'active' : ''}`}
           onClick={() => {
             handleNavigate(() => {
@@ -347,6 +401,18 @@ const Sidebar = ({
           style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
         >
           <FiCheckSquare size={18} /> My work
+        </div>
+
+        <div 
+          className={`sidebar-menu-item ${activeSpecialView === 'inbox' ? 'active' : ''}`}
+          onClick={() => {
+            handleNavigate(() => {
+              if (onSelectSpecialView) onSelectSpecialView('inbox');
+            });
+          }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
+        >
+          <FiInbox size={18} /> Update feed
         </div>
 
         <div 
@@ -388,6 +454,18 @@ const Sidebar = ({
               }}
               onClick={(e) => e.stopPropagation()}
             >
+              {onOpenTemplates && (
+                <div
+                  className="add-menu-item"
+                  onClick={() => {
+                    onOpenTemplates();
+                    setShowMoreMenu(false);
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', cursor: 'pointer' }}
+                >
+                  <FiCopy color="#00c875" /> Template center
+                </div>
+              )}
               <div 
                 className="add-menu-item"
                 onClick={() => {
@@ -403,6 +481,25 @@ const Sidebar = ({
                 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', cursor: 'pointer' }}
               >
                 <FiLayout color="#579bfc" /> แดชบอร์ดสรุปผลรวม (Dashboard)
+              </div>
+              <div
+                className="add-menu-item"
+                onClick={() => {
+                  handleNavigate(() => {
+                    if (onSelectSpecialView) onSelectSpecialView('trash-archive');
+                  });
+                  setShowMoreMenu(false);
+                }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', padding: '0.5rem 0.75rem', cursor: 'pointer' }}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <FiTrash2 color="#fdab3d" /> Trash & Archive
+                </span>
+                {trashCount > 0 && (
+                  <span style={{ fontSize: '0.72rem', padding: '0.1rem 0.45rem', borderRadius: '999px', backgroundColor: 'rgba(226,68,92,0.2)', color: '#e2445c' }}>
+                    {trashCount}
+                  </span>
+                )}
               </div>
               <div 
                 className="add-menu-item"
@@ -444,19 +541,99 @@ const Sidebar = ({
 
       <div style={{ padding: '0 1rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>Workspaces</span>
-        <FiMoreHorizontal size={14} style={{ cursor: 'pointer' }} />
+        <button
+          type="button"
+          onClick={() => handleNavigate(() => onSelectSpecialView && onSelectSpecialView('workspace-overview'))}
+          title="Manage workspace overview"
+          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+        >
+          <FiLayers size={13} />
+        </button>
       </div>
       
-      <div style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <div style={{ width: '24px', height: '24px', backgroundColor: '#e2445c', color: 'white', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>M</div>
-        <span style={{ flex: 1, fontSize: '0.95rem', fontWeight: 500, color: 'var(--text-main)' }}>Main workspace</span>
+      <div ref={wsMenuRef} style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', position: 'relative' }}>
+        <button
+          type="button"
+          onClick={() => setShowWorkspaceMenu((prev) => !prev)}
+          style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            background: 'none',
+            border: 'none',
+            padding: '0.2rem 0.3rem',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            color: 'var(--text-main)',
+            textAlign: 'left',
+            minWidth: 0,
+          }}
+        >
+          <div style={{ width: '24px', height: '24px', backgroundColor: activeWorkspace.color || '#0073ea', color: 'white', borderRadius: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold', flexShrink: 0 }}>
+            {(activeWorkspace.name || 'M').charAt(0).toUpperCase()}
+          </div>
+          <span style={{ flex: 1, fontSize: '0.92rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {activeWorkspace.name}
+          </span>
+          <FiChevronDown size={14} color="var(--text-muted)" />
+        </button>
         <button 
           className="btn-primary" 
           style={{ padding: '2px 6px', borderRadius: '4px' }}
           onClick={(e) => openAddMenu(e, null)}
+          title="Add to workspace"
         >
           <FiPlus />
         </button>
+
+        {showWorkspaceMenu && (
+          <div className="add-menu-dropdown" style={{ zIndex: 1100, top: '44px', left: '1rem', right: '1rem', width: 'auto' }}>
+            <div style={{ padding: '0.3rem 0.6rem', fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
+              My Workspaces
+            </div>
+            {workspaces.map((ws) => (
+              <div
+                key={ws.id}
+                className="add-menu-item"
+                style={{ fontWeight: ws.id === activeWorkspace.id ? 700 : 400 }}
+                onClick={() => {
+                  if (onSelectWorkspace) onSelectWorkspace(ws.id);
+                  setShowWorkspaceMenu(false);
+                }}
+              >
+                <span style={{ width: '18px', height: '18px', borderRadius: '4px', backgroundColor: ws.color || '#0073ea', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 700 }}>
+                  {(ws.name || 'W').charAt(0).toUpperCase()}
+                </span>
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ws.name}</span>
+              </div>
+            ))}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', margin: '4px 0' }} />
+            <div
+              className="add-menu-item"
+              onClick={() => {
+                handleNavigate(() => onSelectSpecialView && onSelectSpecialView('workspace-overview'));
+                setShowWorkspaceMenu(false);
+              }}
+            >
+              <FiLayers color="#579bfc" /> Manage workspace
+            </div>
+            {onAddWorkspace && (
+              <div
+                className="add-menu-item"
+                onClick={() => {
+                  const wsName = window.prompt('ตั้งชื่อ Workspace ใหม่:');
+                  if (wsName && wsName.trim()) {
+                    onAddWorkspace(wsName.trim());
+                  }
+                  setShowWorkspaceMenu(false);
+                }}
+              >
+                <FiPlus color="#00c875" /> Add workspace
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div style={{ padding: '0.5rem 1rem', position: 'relative' }} ref={menuRef}>
@@ -493,6 +670,14 @@ const Sidebar = ({
             <div className="add-menu-item" onClick={() => handleAdd('folder')}>
               <FiFolder color="#fdab3d" /> New Folder
             </div>
+            {onOpenTemplates && (
+              <>
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', margin: '4px 0' }} />
+                <div className="add-menu-item" onClick={() => { setShowAddMenu(false); onOpenTemplates(); }}>
+                  <FiCopy color="#00c875" /> Start with a template
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

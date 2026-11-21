@@ -20,6 +20,12 @@ import NotificationCenter from './components/NotificationCenter';
 import IntegrationsModal from './components/IntegrationsModal';
 import AutomationsModal from './components/AutomationsModal';
 import MobileBottomNav from './components/MobileBottomNav';
+import WorkspaceOverview from './components/WorkspaceOverview';
+import GlobalSearchModal from './components/GlobalSearchModal';
+import InboxView from './components/InboxView';
+import TemplateCenterModal from './components/TemplateCenterModal';
+import TrashArchiveView from './components/TrashArchiveView';
+import { DEFAULT_WORKSPACES } from './utils/workspaceTemplates';
 import {
   createActivityEntry,
   loadAutomations,
@@ -239,7 +245,70 @@ const App = () => {
   const [isAiCopilotOpen, setIsAiCopilotOpen] = useState(false);
   const [automationRecipes, setAutomationRecipes] = useState(loadAutomations);
   const [notifications, setNotifications] = useState(loadNotifications);
+  const [workspaces, setWorkspaces] = useState(() => {
+    try {
+      const saved = localStorage.getItem('tracking_workspaces_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_WORKSPACES;
+  });
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState('ws-main');
+  const [recentBoardIds, setRecentBoardIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('tracking_recent_boards_v1') || '["board-passapp-1"]');
+    } catch {
+      return ['board-passapp-1'];
+    }
+  });
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const fileInputRef = React.useRef(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tracking_workspaces_v1', JSON.stringify(workspaces));
+    } catch {}
+  }, [workspaces]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('tracking_recent_boards_v1', JSON.stringify(recentBoardIds));
+    } catch {}
+  }, [recentBoardIds]);
+
+  useEffect(() => {
+    const onGlobalKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setGlobalSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', onGlobalKeyDown);
+    return () => window.removeEventListener('keydown', onGlobalKeyDown);
+  }, []);
+
+  const trackRecentBoard = (id) => {
+    if (!id) return;
+    setRecentBoardIds((prev) => [id, ...prev.filter((x) => x !== id)].slice(0, 10));
+  };
+
+  const activeWorkspace = useMemo(
+    () => workspaces.find((w) => w.id === activeWorkspaceId) || workspaces[0],
+    [workspaces, activeWorkspaceId]
+  );
+
+  const visibleWorkspaceBoards = useMemo(
+    () =>
+      boards.filter(
+        (b) => !b.isDeleted && !b.isArchived && (b.workspaceId || 'ws-main') === activeWorkspaceId
+      ),
+    [boards, activeWorkspaceId]
+  );
+
+  const trashCount = useMemo(() => boards.filter((b) => b.isDeleted).length, [boards]);
 
   useEffect(() => {
     saveAutomations(automationRecipes);
@@ -593,6 +662,7 @@ const App = () => {
   const handleAddBoard = (type = 'grid', parentId = null) => {
     const newBoard = {
       id: uuidv4(),
+      workspaceId: activeWorkspaceId,
       title: type === 'grid' ? 'New Board' : type === 'dashboard' ? 'New Dashboard' : type === 'doc' ? 'New Document' : 'New Folder',
       type: type,
       parentId: parentId,
@@ -610,7 +680,47 @@ const App = () => {
       ] : []
     };
     setBoards([...boards, newBoard]);
+    setActiveSpecialView(null);
     setActiveBoardId(newBoard.id);
+    trackRecentBoard(newBoard.id);
+  };
+
+  const handleUseTemplate = (template) => {
+    if (!template || typeof template.buildBoard !== 'function') return;
+    const built = template.buildBoard(activeWorkspaceId);
+    setBoards((prev) => [...prev, built]);
+    setActiveSpecialView(null);
+    setActiveBoardId(built.id);
+    trackRecentBoard(built.id);
+  };
+
+  const handleAddWorkspace = (name) => {
+    const colors = ['#0073ea', '#00c875', '#fdab3d', '#c455de', '#e2445c'];
+    const newWs = {
+      id: `ws-${uuidv4().slice(0, 8)}`,
+      name,
+      description: '',
+      color: colors[workspaces.length % colors.length],
+      type: 'open',
+      members: [{ id: `m-${uuidv4().slice(0, 6)}`, name: 'Ohm Saehae', email: 'lighting6647@gmail.com', role: 'Owner' }],
+    };
+    setWorkspaces((prev) => [...prev, newWs]);
+    setActiveWorkspaceId(newWs.id);
+    setActiveSpecialView('workspace-overview');
+  };
+
+  const handleUpdateWorkspace = (wsId, patch) => {
+    setWorkspaces((prev) => prev.map((w) => (w.id === wsId ? { ...w, ...patch } : w)));
+  };
+
+  const handleAddWorkspaceMember = (wsId, member) => {
+    setWorkspaces((prev) =>
+      prev.map((w) =>
+        w.id === wsId
+          ? { ...w, members: [...(w.members || []), { id: `m-${uuidv4().slice(0, 6)}`, ...member }] }
+          : w
+      )
+    );
   };
 
   const handleUpdateDashboard = (boardId, widgets) => {
@@ -775,7 +885,33 @@ const App = () => {
   };
 
   const handleDeleteBoard = (boardId) => {
-    setBoards(boards.filter(b => b.id !== boardId));
+    setBoards((prev) => prev.map((b) => (b.id === boardId ? { ...b, isDeleted: true } : b)));
+    if (activeBoardId === boardId) {
+      const next = visibleWorkspaceBoards.find((b) => b.id !== boardId && b.type !== 'folder');
+      if (next) setActiveBoardId(next.id);
+      else setActiveSpecialView('workspace-overview');
+    }
+  };
+
+  const handleArchiveBoard = (boardId) => {
+    setBoards((prev) => prev.map((b) => (b.id === boardId ? { ...b, isArchived: true } : b)));
+    if (activeBoardId === boardId) {
+      const next = visibleWorkspaceBoards.find((b) => b.id !== boardId && b.type !== 'folder');
+      if (next) setActiveBoardId(next.id);
+      else setActiveSpecialView('workspace-overview');
+    }
+  };
+
+  const handleRestoreBoard = (boardId) => {
+    setBoards((prev) => prev.map((b) => (b.id === boardId ? { ...b, isDeleted: false } : b)));
+  };
+
+  const handleUnarchiveBoard = (boardId) => {
+    setBoards((prev) => prev.map((b) => (b.id === boardId ? { ...b, isArchived: false } : b)));
+  };
+
+  const handlePermanentDeleteBoard = (boardId) => {
+    setBoards((prev) => prev.filter((b) => b.id !== boardId));
   };
 
   const handleUpdateBoardTitle = (title) => {
@@ -1110,24 +1246,37 @@ const App = () => {
         )}
 
         <Sidebar 
-          boards={boards}
+          boards={visibleWorkspaceBoards}
           activeBoardId={activeBoardId}
           isOpen={isSidebarOpen}
           onClose={() => setIsSidebarOpen(false)}
           onSelectBoard={(id) => {
             setActiveSpecialView(null);
             setActiveBoardId(id);
+            trackRecentBoard(id);
           }}
           activeSpecialView={activeSpecialView}
           onSelectSpecialView={(view) => setActiveSpecialView(view)}
           onAddBoard={handleAddBoard}
           onDeleteBoard={handleDeleteBoard}
+          onArchiveBoard={handleArchiveBoard}
           onRenameBoard={handleRenameBoard}
           onMoveBoard={handleMoveBoard}
           onDuplicateBoard={handleDuplicateBoard}
+          workspaces={workspaces}
+          activeWorkspaceId={activeWorkspaceId}
+          onSelectWorkspace={(wsId) => {
+            setActiveWorkspaceId(wsId);
+            setActiveSpecialView('workspace-overview');
+          }}
+          onAddWorkspace={handleAddWorkspace}
+          onOpenGlobalSearch={() => setGlobalSearchOpen(true)}
+          onOpenTemplates={() => setTemplateModalOpen(true)}
+          trashCount={trashCount}
           onResetToBlank={() => {
             const blankBoard = {
               id: 'board-1',
+              workspaceId: activeWorkspaceId,
               title: 'New Board',
               type: 'grid',
               color: '#0085ff',
@@ -1148,7 +1297,43 @@ const App = () => {
         />
         
         <main id="main-board-content" role="main" tabIndex={-1} className="main-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)', overflow: 'hidden' }}>
-          {activeSpecialView === 'my-work' ? (
+          {activeSpecialView === 'workspace-overview' ? (
+            <WorkspaceOverview
+              workspace={activeWorkspace}
+              boards={visibleWorkspaceBoards}
+              recentBoardIds={recentBoardIds}
+              onSelectBoard={(id) => {
+                setActiveSpecialView(null);
+                setActiveBoardId(id);
+                trackRecentBoard(id);
+              }}
+              onAddBoard={handleAddBoard}
+              onOpenTemplates={() => setTemplateModalOpen(true)}
+              onUpdateWorkspace={handleUpdateWorkspace}
+              onAddMember={handleAddWorkspaceMember}
+            />
+          ) : activeSpecialView === 'inbox' ? (
+            <InboxView
+              boards={boards}
+              notifications={notifications}
+              onSelectBoard={(id) => {
+                setActiveSpecialView(null);
+                setActiveBoardId(id);
+                trackRecentBoard(id);
+              }}
+              onOpenItem={(groupId, itemId, boardId) => {
+                setTaskDrawerOpen(true);
+                setActiveItemContext({ groupId, itemId, boardId });
+              }}
+            />
+          ) : activeSpecialView === 'trash-archive' ? (
+            <TrashArchiveView
+              boards={boards}
+              onRestoreBoard={handleRestoreBoard}
+              onPermanentDeleteBoard={handlePermanentDeleteBoard}
+              onUnarchiveBoard={handleUnarchiveBoard}
+            />
+          ) : activeSpecialView === 'my-work' ? (
             <MyWorkView 
               boards={boards}
               onSelectBoard={(id) => {
@@ -1552,6 +1737,28 @@ const App = () => {
         onToggleRecipe={handleToggleAutomation}
         onDeleteRecipe={handleDeleteAutomation}
         onAddRecipe={handleAddAutomation}
+      />
+
+      <GlobalSearchModal
+        isOpen={globalSearchOpen}
+        onClose={() => setGlobalSearchOpen(false)}
+        boards={boards}
+        recentBoardIds={recentBoardIds}
+        onSelectBoard={(id) => {
+          setActiveSpecialView(null);
+          setActiveBoardId(id);
+          trackRecentBoard(id);
+        }}
+        onOpenItem={(groupId, itemId, boardId) => {
+          setTaskDrawerOpen(true);
+          setActiveItemContext({ groupId, itemId, boardId });
+        }}
+      />
+
+      <TemplateCenterModal
+        isOpen={templateModalOpen}
+        onClose={() => setTemplateModalOpen(false)}
+        onUseTemplate={handleUseTemplate}
       />
 
       <MobileBottomNav 
